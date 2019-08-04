@@ -7,7 +7,11 @@
 #include "error_handling.h"
 #include "symbol_tree.h"
 #include "utils.h"
-
+#include <ctype.h>
+#include <string.h>
+#include "keywords.h"
+#include "opcode.h"
+#include "directives.h"
 
 #define MAX_CODE_LINE 81
 #define WORD_SIZE 10
@@ -15,13 +19,42 @@
 #define LABEL_SEPARATOR ':'
 #define LABEL_MAX_SIZE 50
 
+
+typedef struct flags {
+    unsigned is_label:1;
+    unsigned in_data:1;
+    unsigned in_mat:1;
+} flags;
+
 /*
  * Declaring prototypes
  */
 
+bool search_entry(char label[50]);
+
+bool search_extern(char label[50]);
+
+int process_instruction(char *line, int label);
+
+void clean_data();
+
+void clean_code();
+
+void clean_entries_table();
+
+void clean_externs_table();
+
+void clean_symbol_table();
+
+void generate_output_files();
+
+int process_macro(char* line);
+
 void process_file(char *filename);
 
 void first_pass(FILE *fp);
+
+void second_pass(FILE *fp);
 
 short int is_comment_or_empty(char *line);
 

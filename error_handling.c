@@ -35,6 +35,9 @@ void print_error(error_code err, int line_number) {
         case LABEL_IS_ALREADY_ENTRY:
             printf("Line %d: label already defined as entry \n", line_number);
             break;
+        case LABEL_IS_ALREADY_MACRO:
+            printf("Line %d: label already defined as macro \n", line_number);
+            break;
         case BAD_COMMAND_ARGUMENT:
             printf("line %d: bad argument[s]\n", line_number);
             break;

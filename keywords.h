@@ -1,7 +1,6 @@
 #ifndef ASSEMBLER_KEYWORDS_H
 #define ASSEMBLER_KEYWORDS_H
 
-#endif //ASSEMBLER_KEYWORDS_H
 
 #include "symbol_tree.h"
 #include <stdlib.h>
@@ -24,3 +23,4 @@ int is_keyword(char *word);
 
 int search(char *word, keyword_p node);
 
+#endif /*ASSEMBLER_KEYWORDS_H*/

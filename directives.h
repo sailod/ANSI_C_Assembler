@@ -15,7 +15,7 @@
 #define STRING_DIRECTIVE_TYPE 3
 #define ENTRY_DIRECTIVE_TYPE 4
 #define EXTERN_DIRECTIVE_TYPE 5
-#define MACRO_DIRECTIVE_TYPE 5
+#define MACRO_DIRECTIVE_TYPE 6
 
 typedef struct directive *directive_p;
 
