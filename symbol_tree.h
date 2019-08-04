@@ -13,6 +13,8 @@
 
 typedef struct Symbol *sym_pt;
 
+extern sym_pt symbol_head;
+
 typedef struct Symbol {
     char *label;
     int value; /* Address in case of label */

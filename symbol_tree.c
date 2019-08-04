@@ -43,7 +43,7 @@ sym_pt search_label(char *label, sym_pt node) {
             return search_label(label, node->left);
         }
     } else
-        return 0;
+        return NULL;
 }
 
 void print_symbol_table_recursion(sym_pt head)

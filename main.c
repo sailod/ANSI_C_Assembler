@@ -23,5 +23,6 @@ int test()
 {
    /* bool test=(bool)(1);
     printf("%d",test);*/
+   bool test = (bool)(1 == 3);
     return 0;
 }
