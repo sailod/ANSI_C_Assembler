@@ -14,7 +14,7 @@ typedef struct Opcode *opcode_p;
 
 typedef struct Opcode {             /* Opcode node. it will be in an hash list, and opcodes with the same hash will be in a linked list */
     char name[MAX_OPCODE_NAME];
-    char code[MAX_OPCODE_BITS];
+    int code;
     op_type type;
     opcode_p next;
 

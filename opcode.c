@@ -5,22 +5,22 @@
 
 Opcode *hash_table[OPCODES_COUNT] = {NULL};
 
-Opcode mov = {'mov', '0000', OPS_2};
-Opcode cmp = {'cmp', '0001', OPS_2};
-Opcode add = {'add', '0010', OPS_2};
-Opcode sub = {'sub', '0011', OPS_2};
-Opcode not = {'not', '0100', OP_1};
-Opcode clr = {'clr', '0101', OP_1};
-Opcode lea = {'lea', '0110', OPS_2};
-Opcode inc = {'inc', '0111', OP_1};
-Opcode dec = {'dec', '1000', OP_1};
-Opcode jmp = {'jmp', '1001', OP_1};
-Opcode bne = {'bne', '1010', OP_1};
-Opcode red = {'red', '1011', OP_1};
-Opcode prn = {'prn', '1100', OP_1};
-Opcode jsr = {'jsr', '1101', OP_1};
-Opcode rts = {'rts', '1110', NO_OP};
-Opcode stop = {'stop', '1111', NO_OP};
+Opcode mov = {'mov', 0, OPS_2};
+Opcode cmp = {'cmp', 1, OPS_2};
+Opcode add = {'add', 2, OPS_2};
+Opcode sub = {'sub', 3, OPS_2};
+Opcode not = {'not', 4, OP_1};
+Opcode clr = {'clr', 5, OP_1};
+Opcode lea = {'lea', 6, OPS_2};
+Opcode inc = {'inc', 7, OP_1};
+Opcode dec = {'dec', 8, OP_1};
+Opcode jmp = {'jmp', 9, OP_1};
+Opcode bne = {'bne', 10, OP_1};
+Opcode red = {'red', 11, OP_1};
+Opcode prn = {'prn', 12, OP_1};
+Opcode jsr = {'jsr', 13, OP_1};
+Opcode rts = {'rts', 14, NO_OP};
+Opcode stop = {'stop', 15, NO_OP};
 
 int getHashIndex(char *name) {
     int sum;

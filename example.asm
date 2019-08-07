@@ -19,6 +19,3 @@ STR: .string "abcdef"
 LIST: .data 6, -9, len
 K: .data 22
 .extern L3
-
-;[forum] fix for solution in line 108 00000000101000 --> ****%%*
-;[forum] fix for solution in line 117 00000000001000 --> *****%*

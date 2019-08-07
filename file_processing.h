@@ -1,6 +1,5 @@
 #ifndef ASSEMBLER_FILE_PROCESSING_H
 #define ASSEMBLER_FILE_PROCESSING_H
-#endif
 
 
 #include <stdio.h>
@@ -14,7 +13,7 @@
 #include "directives.h"
 
 #define MAX_CODE_LINE 81
-#define WORD_SIZE 10
+#define WORD2_SIZE 10
 #define COMMENT_CHAR ';'
 #define LABEL_SEPARATOR ':'
 #define LABEL_MAX_SIZE 50
@@ -72,6 +71,12 @@ char *strip_label_chars(char *line, char label_name[LABEL_MAX_SIZE]);
 
 char *strip_number(char *line, int* value);
 
+bool is_already_exists_label(char label[50]);
+
+int process_data_or_string_line(char *line);
+
+void add_symbol(char* label, int directive_type, int address);
+
 /*
  * Done declaring prototypes.
  */
@@ -80,3 +85,4 @@ char *strip_number(char *line, int* value);
 int IC, DC, err_count, lines_count;
 char label[MAX_LABEL];
 
+#endif

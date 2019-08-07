@@ -2,12 +2,14 @@
 #include "file_processing.h"
 #include "opcode.h"
 #include "keywords.h"
+#include "machine_code.h"
 
 #define UASGE_MESSAGE "Usage: assemble an assembly code. by files provided in the terminal."
 
 int test();
 
 int main(int argc, char **argv) {
+
     test((*argv)+1);
     if (argc == 1) {
         printf(UASGE_MESSAGE);
@@ -23,6 +25,9 @@ int test()
 {
    /* bool test=(bool)(1);
     printf("%d",test);*/
-   bool test = (bool)(1 == 3);
+    bool test = (bool)(1 == 3);
+   machine_word_directive x = {2,2,2,2,0};
+   char* ttttes = get_word(x);
+   printf("%s",ttttes);
     return 0;
 }

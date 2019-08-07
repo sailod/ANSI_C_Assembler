@@ -1,7 +1,7 @@
 #include "file_processing.h"
+#include "machine_code.h"
 
 
-bool is_already_exists_label(char label[50]);
 
 /*
  * First Pass Algorithm
@@ -50,7 +50,6 @@ bool is_already_exists_label(char label[50]);
 
 
 void process_file(char *filename) {
-    char actions[MAX_CODE_LINE][WORD_SIZE];
     FILE *fp = fopen("example.asm", "r");
     if (!fp) {
         perror("Error while opening file");
@@ -160,8 +159,8 @@ int process_line_first_pass(char *line) {
             {
                 err_count++;
                 print_error(SYNTAX_ERROR, lines_count);
-                return 0;
             }
+            return 0;
         }
 
 
@@ -206,7 +205,7 @@ int process_macro(char *line) {
     line_pt = strip_blank_chars(line_pt);
     line_pt = strip_number(line_pt, &value);
 
-    if (*line_pt != "\n") {
+    if (*line_pt != '\n') {
         print_error(SYNTAX_ERROR, lines_count);
         return 0;
     }
@@ -276,13 +275,14 @@ bool search_entry(char label[50]) {
 }
 
 int process_directive_first_pass(char *line, int is_label) {
-    sym_pt new_symbol;
     char *directive_type_str;
     int directive_type, i, address;
     bool is_external, is_action, is_data;
     is_action = FALSE;
     is_data = FALSE;
     is_external = FALSE;
+
+    char extern_label[LABEL_MAX_SIZE];
 
     char *line_head = line;
 
@@ -300,24 +300,93 @@ int process_directive_first_pass(char *line, int is_label) {
         return 0; /* Don't handle '.entry' in first pass. */
     } else if (directive_type == EXTERN_DIRECTIVE_TYPE) {
         is_external = TRUE;
-        strip_label_chars(line, label);
+        line = strip_label_chars(line,extern_label);
         address = 0;
+        add_symbol(extern_label, directive_type, address);
+        line = strip_blank_chars(line);
+        if(*line != '\0')
+        {
+            print_error(SYNTAX_ERROR,lines_count);
+        }
+        return 0;
     } else {
         is_data = TRUE;
         address = DC;
     }
 
     if (is_label) {
-        if (!is_already_exists_label(label)) {
-            new_symbol = create_symbol_node(label, address, directive_type);
-            insert_symbol_to_tree(new_symbol);
-        }
+        add_symbol(label, directive_type, address);
     }
 
     if (is_data) {
+        int num_words = process_data_or_string_line(line);
 
     }
 
+}
+
+void add_symbol(char* label, int directive_type, int address);
+
+machine_words *create_string_words(char *line);
+
+
+
+void add_symbol(char *label, int directive_type, int address) {
+    sym_pt new_symbol;
+    if (!is_already_exists_label(label)) {
+        new_symbol = create_symbol_node(label, address, directive_type);
+        insert_symbol_to_tree(new_symbol);
+    }
+}
+
+int process_data_or_string_line(char *line) {
+    machine_words* string_words;
+    if(*line == '\"')
+    {
+        line++;
+        printf("\nProcessing string data store\n");
+        string_words = create_string_words(line);
+        print_data_machine_word(string_words);
+        add_machine_words(&string_words);
+    }
+    else if(isdigit(*line))
+    {
+        printf("\nProcessing numbers data store\n");
+    }
+    else
+    {
+        print_error(BAD_COMMAND_ARGUMENT,lines_count);
+    }
+return 0;
+}
+
+
+
+machine_words *create_string_words(char *line) {
+    machine_words* head_word;
+    machine_words* iterator;
+    char c;
+
+    if(*line != '"')
+    {
+        head_word = &((machine_words) { .address = DC, .value= *line, .next = NULL});
+        DC++;
+        line++;
+    }
+    iterator = head_word;
+    while(c = *line , c != '\"')
+    {
+        c= *line;
+        /*iterator = malloc(sizeof(machine_words));*/
+        iterator->next = (machine_words*) malloc(sizeof(machine_words));
+        iterator = iterator->next;
+        iterator->value=c;
+        iterator->address=DC;
+        DC++;
+        line++;
+    }
+
+    return head_word;
 }
 
 bool is_already_exists_label(char label[50]) {
@@ -387,6 +456,15 @@ char *strip_number(char *line, int *value) {
     char count = 0;
     char *name_head = name;
 
+    int is_minus = 0;
+
+    if (*line == '-') {
+        is_minus = 1;
+        line++;
+    } else if (*line == '+') {
+        line++;
+    }
+
     while ((c = *line) && isdigit(c)) {
         *name = c;
         name++;
@@ -396,7 +474,8 @@ char *strip_number(char *line, int *value) {
     if (!count) {
         print_error(BAD_COMMAND_ARGUMENT, lines_count);
     } else {
-        *value = atoi(name_head);
+        *value = is_minus ? atoi(name_head) * (-1) : atoi(name_head);
     }
+
     return line;
 }

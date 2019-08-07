@@ -1,7 +1,6 @@
 #ifndef ASSEMBLER_ERROR_HANDLING_H
 #define ASSEMBLER_ERROR_HANDLING_H
 
-#endif /* ASSEMBLER_ERROR_HANDLING_H */
 typedef enum error_code {
     EMPTY_ERROR, /* for better use, the enum will start from 1, so we put here an empty error.*/
     SYNTAX_ERROR,
@@ -20,3 +19,5 @@ typedef enum error_code {
 } error_code;
 
 void print_error(error_code err, int line_number);
+
+#endif /* ASSEMBLER_ERROR_HANDLING_H */
