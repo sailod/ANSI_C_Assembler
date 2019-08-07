@@ -27,7 +27,7 @@ int test()
     printf("%d",test);*/
     bool test = (bool)(1 == 3);
    machine_word_directive x = {2,2,2,2,0};
-   char* ttttes = get_word(x);
+   char* ttttes = get_word_string(x);
    printf("%s",ttttes);
     return 0;
 }

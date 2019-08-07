@@ -35,8 +35,12 @@ machine_words * tail;
  */
 
 void print_machine_word(machine_word_directive word);
-char* get_word(machine_word_directive word);
-void add_machine_words(machine_words **words);
-void print_data_machine_word(machine_words *pWords);
+char* get_word_string(machine_word_directive word);
+void add_machine_words(machine_words *words);
+void print_data_machine_words(machine_words *words);
+machine_words *create_string_words(char *line);
+machine_words* create_machine_word(int address, int value);
+machine_words * get_word_int(machine_word_directive word);
+machine_words *create_number_words(char *line);
 
 #endif

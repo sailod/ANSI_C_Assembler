@@ -320,15 +320,12 @@ int process_directive_first_pass(char *line, int is_label) {
 
     if (is_data) {
         int num_words = process_data_or_string_line(line);
-
+        return num_words;
     }
 
 }
 
 void add_symbol(char* label, int directive_type, int address);
-
-machine_words *create_string_words(char *line);
-
 
 
 void add_symbol(char *label, int directive_type, int address) {
@@ -341,17 +338,24 @@ void add_symbol(char *label, int directive_type, int address) {
 
 int process_data_or_string_line(char *line) {
     machine_words* string_words;
+    machine_words* number_words;
+    machine_words* empty;
+
     if(*line == '\"')
     {
         line++;
         printf("\nProcessing string data store\n");
         string_words = create_string_words(line);
-        print_data_machine_word(string_words);
-        add_machine_words(&string_words);
+        print_data_machine_words(string_words);
+        add_machine_words(string_words);
     }
     else if(isdigit(*line))
     {
         printf("\nProcessing numbers data store\n");
+        number_words = create_number_words(line);
+        print_data_machine_words(number_words);
+        add_machine_words(number_words);
+
     }
     else
     {
@@ -360,34 +364,6 @@ int process_data_or_string_line(char *line) {
 return 0;
 }
 
-
-
-machine_words *create_string_words(char *line) {
-    machine_words* head_word;
-    machine_words* iterator;
-    char c;
-
-    if(*line != '"')
-    {
-        head_word = &((machine_words) { .address = DC, .value= *line, .next = NULL});
-        DC++;
-        line++;
-    }
-    iterator = head_word;
-    while(c = *line , c != '\"')
-    {
-        c= *line;
-        /*iterator = malloc(sizeof(machine_words));*/
-        iterator->next = (machine_words*) malloc(sizeof(machine_words));
-        iterator = iterator->next;
-        iterator->value=c;
-        iterator->address=DC;
-        DC++;
-        line++;
-    }
-
-    return head_word;
-}
 
 bool is_already_exists_label(char label[50]) {
     if (is_keyword(label)) {
@@ -473,6 +449,7 @@ char *strip_number(char *line, int *value) {
     }
     if (!count) {
         print_error(BAD_COMMAND_ARGUMENT, lines_count);
+        return NULL;
     } else {
         *value = is_minus ? atoi(name_head) * (-1) : atoi(name_head);
     }
