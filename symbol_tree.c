@@ -1,11 +1,13 @@
+#include "machine_code.h"
+#include "file_processing.h"
 #include "symbol_tree.h"
 
 sym_pt symbol_head = NULL;
 
-sym_pt create_symbol_node(char *label, int address, int type)
-{
+
+sym_pt create_symbol_node(char *label, int address, int type) {
     sym_pt new_symbol;
-    new_symbol = (sym_pt)(malloc(sizeof(Symbol)));
+    new_symbol = (sym_pt) (malloc(sizeof(Symbol)));
     new_symbol->label = strdup(label);
     new_symbol->value = address;
     new_symbol->type = type;
@@ -34,32 +36,57 @@ void insert_symbol(sym_pt new_symbol, sym_pt *cur_node) {
 
 sym_pt search_label(char *label, sym_pt node) {
     int strcmp_result;
-    if (node != 0) {
+    if (node != NULL) {
         if ((strcmp_result = strcmp(label, node->label)) == 0) {
             return node;
-        } else if (strcmp_result > 1) {
-            return search_label(label, node->right);
-        } else {
-            return search_label(label, node->left);
         }
+
+        sym_pt left = search_label(label, node->left);
+        sym_pt right = search_label(label, node->right);
+        return left != NULL ? left : right;
     } else
         return NULL;
 }
 
-void print_symbol_table_recursion(sym_pt head)
-{
-    if(head)
-    {
-        printf("%-25s%-20d%-10d\n", head->label, head->value,head->type);
+void print_symbol_table_recursion(sym_pt head) {
+    if (head) {
+        printf("%-25s%-20d%-10d\n", head->label, head->value, head->type);
         print_symbol_table_recursion(head->left);
         print_symbol_table_recursion(head->right);
     }
 
 }
 
-void print_symbol_table()
-{
+void print_symbol_table() {
     printf("%-25s%-20s%-10s\n", "Name", "Value", "Type");
     print_symbol_table_recursion(symbol_head);
 
+}
+
+void add_symbol(char *label, int directive_type, int address) {
+    sym_pt new_symbol;
+    if (!is_already_exists_label(label)) {
+        new_symbol = create_symbol_node(label, address, directive_type);
+        insert_symbol_to_tree(new_symbol);
+    }
+}
+
+bool is_already_exists_label(char label[50]) {
+    if (is_keyword(label)) {
+        print_error(LABEL_IS_KEYWORD_ERROR, lines_count);
+        return TRUE;
+    }
+    sym_pt already_exist_sym = search_label(label, symbol_head);
+    if (already_exist_sym)
+        if (already_exist_sym->type == ENTRY_DIRECTIVE_TYPE) {
+            print_error(LABEL_IS_ALREADY_ENTRY, lines_count);
+            return TRUE;
+        } else if (already_exist_sym->type == EXTERN_DIRECTIVE_TYPE) {
+            print_error(LABEL_IS_ALREADY_EXTERN, lines_count);
+            return TRUE;
+        } else if (already_exist_sym->type == MACRO_DIRECTIVE_TYPE) {
+            print_error(LABEL_IS_ALREADY_MACRO, lines_count);
+            return TRUE;
+        }
+    return FALSE;
 }

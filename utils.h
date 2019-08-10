@@ -6,4 +6,5 @@ typedef enum bool{
     TRUE=1, FALSE=0
 } bool;
 
+#define DEBUG 1
 #endif

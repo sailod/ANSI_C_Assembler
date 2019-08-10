@@ -11,6 +11,7 @@
 #include "keywords.h"
 #include "opcode.h"
 #include "directives.h"
+#include "machine_code.h"
 
 #define MAX_CODE_LINE 81
 #define WORD2_SIZE 10
@@ -71,11 +72,15 @@ char *strip_label_chars(char *line, char label_name[LABEL_MAX_SIZE]);
 
 char *strip_number(char *line, int* value);
 
-bool is_already_exists_label(char label[50]);
+char *strip_number_or_label(char *line, int *value);
+
+char *strip_operand_chars(char *line, char label_name[LABEL_MAX_SIZE]);
 
 int process_data_or_string_line(char *line);
 
 void add_symbol(char* label, int directive_type, int address);
+
+int get_operand_addressing_method(char string[50]);
 
 /*
  * Done declaring prototypes.

@@ -65,6 +65,21 @@ int is_keyword(char *word) {
 
 }
 
+bool is_register(char* string)
+{
+    char* tmp = string;
+    if(strlen(string)<2) {
+        return FALSE;
+    }
+    if(*tmp++ != 'r')
+        return FALSE;
+    if (!isdigit(*tmp))
+        return FALSE;
+    if(*tmp-'0' >=0 && *tmp-'0' <=7)
+        return TRUE;
+    return FALSE;
+}
+
 int search(char *word, keyword_p node) {
     int strcmp_result;
     if (node != 0) {

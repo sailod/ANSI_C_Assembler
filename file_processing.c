@@ -1,5 +1,6 @@
 #include "file_processing.h"
 #include "machine_code.h"
+#include "symbol_tree.h"
 
 
 
@@ -219,7 +220,34 @@ int process_macro(char *line) {
     return 0;
 }
 
-int process_instruction(char *line, int label) {
+int process_instruction(char *line, int is_label) {
+    if(DEBUG)
+        printf("Processing Phase 1 instruction: \n\t%s\n",line);
+
+    char instruction[MAX_OPCODE_BITS];
+    int L;
+    if(is_label)
+    {
+        add_symbol(label,find_directive_type("code"),IC+100);
+
+    }
+    if(!isalpha(*line))
+    {
+        print_error(INSTRUCTION_NOT_FOUND,lines_count);
+        return 0;
+    }
+    line = strip_label_chars(line,instruction);
+
+    opcode_p opcode = get_opcode_node(instruction);
+    if(!opcode)
+        return 0;
+
+
+    machine_word_instruction* first_word = (machine_word_instruction*)malloc(sizeof(machine_word_instruction));
+
+    L = get_number_of_instruction_words(line, first_word, opcode);
+
+
     return 0;
 }
 
@@ -235,6 +263,7 @@ bool find_label(char *line) {
     is_label_found = (bool) (*p == LABEL_SEPARATOR);
     if (is_label_found) {
         strncpy(label, line, i);
+        label[i] = '\0';
         if (i > MAX_LABEL) {
             print_error(LABEL_TOO_LONG_ERROR, lines_count);
             return FALSE;
@@ -318,23 +347,16 @@ int process_directive_first_pass(char *line, int is_label) {
         add_symbol(label, directive_type, address);
     }
 
-    if (is_data) {
-        int num_words = process_data_or_string_line(line);
-        return num_words;
-    }
+    int num_words = process_data_or_string_line(line);
+    return num_words;
+
+
 
 }
 
-void add_symbol(char* label, int directive_type, int address);
 
 
-void add_symbol(char *label, int directive_type, int address) {
-    sym_pt new_symbol;
-    if (!is_already_exists_label(label)) {
-        new_symbol = create_symbol_node(label, address, directive_type);
-        insert_symbol_to_tree(new_symbol);
-    }
-}
+
 
 int process_data_or_string_line(char *line) {
     machine_words* string_words;
@@ -355,7 +377,6 @@ int process_data_or_string_line(char *line) {
         number_words = create_number_words(line);
         print_data_machine_words(number_words);
         add_machine_words(number_words);
-
     }
     else
     {
@@ -364,26 +385,6 @@ int process_data_or_string_line(char *line) {
 return 0;
 }
 
-
-bool is_already_exists_label(char label[50]) {
-    if (is_keyword(label)) {
-        print_error(LABEL_IS_KEYWORD_ERROR, lines_count);
-        return TRUE;
-    }
-    sym_pt already_exist_sym = search_label(label, symbol_head);
-    if (already_exist_sym)
-        if (already_exist_sym->type == ENTRY_DIRECTIVE_TYPE) {
-            print_error(LABEL_IS_ALREADY_ENTRY, lines_count);
-            return TRUE;
-        } else if (already_exist_sym->type == EXTERN_DIRECTIVE_TYPE) {
-            print_error(LABEL_IS_ALREADY_EXTERN, lines_count);
-            return TRUE;
-        } else if (already_exist_sym->type == MACRO_DIRECTIVE_TYPE) {
-            print_error(LABEL_IS_ALREADY_MACRO, lines_count);
-            return TRUE;
-        }
-    return FALSE;
-}
 
 short int is_comment_or_empty(char *line) {
     char c;
@@ -402,20 +403,23 @@ char *strip_blank_chars(char *line) {
 
 char *strip_label_chars(char *line, char label_name[LABEL_MAX_SIZE]) {
     char c;
-    char *name;
+    char *name = label_name;
     char count = 0;
 
     name = label_name;
     if (!isalpha(*line)) {
         print_error(LABEL_FIRST_CHAR_IS_NOT_ALPHA_ERROR, lines_count);
+        label_name = NULL;
         return line;
     }
     *name = *line;
     line++;
     name++;
+    count++;
     while ((c = *line) && (isalpha(c) || isdigit(c))) {
         if (count > LABEL_MAX_SIZE) {
             print_error(LABEL_TOO_LONG_ERROR, lines_count);
+            label_name = NULL;
             return line;
         }
         *name = *line;
@@ -423,6 +427,37 @@ char *strip_label_chars(char *line, char label_name[LABEL_MAX_SIZE]) {
         line++;
         count++;
     }
+    label_name[count]='\0';
+    return line;
+}
+
+char *strip_operand_chars(char *line, char label_name[LABEL_MAX_SIZE]) {
+    char c;
+    char *name = label_name;
+    char count = 0;
+
+    name = label_name;
+    if (!isalpha(*line) && *line != '#') {
+        print_error(BAD_COMMAND_ARGUMENT, lines_count);
+        label_name = NULL;
+        return line;
+    }
+    *name = *line;
+    line++;
+    name++;
+    count++;
+    while ((c = *line) && !isspace(c) && (isalpha(c) || isdigit(c) || c == '[' || c == ']' || c == '-' || c == '+')) {
+        if (count > LABEL_MAX_SIZE) {
+            print_error(BAD_COMMAND_ARGUMENT, lines_count);
+            label_name = NULL;
+            return line;
+        }
+        *name = *line;
+        name++;
+        line++;
+        count++;
+    }
+    label_name[count]='\0';
     return line;
 }
 
@@ -455,4 +490,44 @@ char *strip_number(char *line, int *value) {
     }
 
     return line;
+}
+char *strip_number_or_label(char *line, int *value) {
+    char c;
+    char *name = (char *) malloc(LABEL_MAX_SIZE);
+    char count = 0;
+    char *name_head = name;
+
+    int is_minus = 0;
+
+    if (isdigit(*line) || *line == '-' || *line == '+' ) {
+        return strip_number(line,value);
+    } else if (isalpha(*line)) {
+        line = strip_label_chars(line,name);
+        sym_pt macro = search_label(name,symbol_head);
+        if(macro == NULL)
+        {
+            print_error(LABEL_WITH_NO_DATA_ERROR,lines_count);
+        }
+        else
+        {
+            *value = macro->value;
+        }
+        return line;
+    }
+
+}
+
+int get_operand_addressing_method(char string[50]) {
+    char temp[LABEL_MAX_SIZE];
+    if(string[0] == '#')
+        return IMMEDIATE;
+    else if (strstr(string,"["))
+        return PERMANENT_INDEX;
+    else if (is_register(string))
+        return DIRECT_REGISTER;
+    else if (!strip_label_chars(string,temp))
+        return DIRECT;
+    else
+        return UNKNOWN;
+
 }

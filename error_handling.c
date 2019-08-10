@@ -41,15 +41,16 @@ void print_error(error_code err, int line_number) {
         case BAD_COMMAND_ARGUMENT:
             printf("line %d: bad argument[s]\n", line_number);
             break;
+        case INSTRUCTION_NOT_FOUND:
+            printf("Line %d: opcode was not found!", line_number);
+            break;
         case 40:
             printf("line %d: label cannot be a directive. \n", line_number);
             break;
         case 41:
             printf("line %d: Previously defined label. \n", line_number);
             break;
-        case 62:
 
-            break;
         case 74:
             printf("line %d: unrecognized insruction. \n", line_number);
             break;

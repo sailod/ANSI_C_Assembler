@@ -2,13 +2,17 @@
 #define ASSEMBLER_OPCODE_H
 #include <stdlib.h>
 
-#define OPCODES_COUNT 500
+#define OPCODES_COUNT 16
 #define MAX_OPCODE_NAME 10
 #define MAX_OPCODE_BITS 4
 
 typedef enum {
     OPS_2, OP_1, NO_OP
 } op_type;
+
+typedef enum {
+    IMMEDIATE = 0, DIRECT = 1, PERMANENT_INDEX = 2, DIRECT_REGISTER = 3, UNKNOWN = 20
+} addressing_method;
 
 typedef struct Opcode *opcode_p;
 
@@ -22,14 +26,10 @@ typedef struct Opcode {             /* Opcode node. it will be in an hash list, 
 
 extern Opcode *hash_table[OPCODES_COUNT];
 
-int getHashIndex(char *name);
-
 void init_opcode_hash_table();
 
-void insertOpCodeNode(Opcode *node, int index);
+void insert_opcode_node(Opcode *node, int index);
 
-void insertIntoHashMap(Opcode *Node);
-
-Opcode *getOpcodeNode(char *op);
+Opcode *get_opcode_node(char *op);
 
 #endif /* ASSEMBLER_OPCODE_H */

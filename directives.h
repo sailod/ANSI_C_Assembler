@@ -11,7 +11,7 @@
 #define NOT_EXISTS_DIRECTIVE_TYPE -1
 
 #define DATA_DIRECTIVE_TYPE 1
-#define MAT_DIRECTIVE_TYPE 2
+#define CODE_DIRECTIVE_TYPE 2
 #define STRING_DIRECTIVE_TYPE 3
 #define ENTRY_DIRECTIVE_TYPE 4
 #define EXTERN_DIRECTIVE_TYPE 5
@@ -26,7 +26,7 @@ typedef struct directive {
 
 static directive directives[] = {
         {"data",   DATA_DIRECTIVE_TYPE},
-        {"mat",    MAT_DIRECTIVE_TYPE},
+        {"code",    CODE_DIRECTIVE_TYPE},
         {"string", STRING_DIRECTIVE_TYPE},
         {"entry",  ENTRY_DIRECTIVE_TYPE},
         {"extern", EXTERN_DIRECTIVE_TYPE},

@@ -23,4 +23,6 @@ int is_keyword(char *word);
 
 int search(char *word, keyword_p node);
 
+bool is_register(char* string);
+
 #endif /*ASSEMBLER_KEYWORDS_H*/
