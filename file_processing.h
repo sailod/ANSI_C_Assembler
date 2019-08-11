@@ -54,7 +54,7 @@ void process_file(char *filename);
 
 void first_pass(FILE *fp);
 
-void second_pass(FILE *fp);
+int second_pass(FILE *fp);
 
 short int is_comment_or_empty(char *line);
 
@@ -80,7 +80,6 @@ int process_data_or_string_line(char *line);
 
 void add_symbol(char* label, int directive_type, int address);
 
-int get_operand_addressing_method(char string[50]);
 
 /*
  * Done declaring prototypes.

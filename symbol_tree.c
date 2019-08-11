@@ -90,3 +90,13 @@ bool is_already_exists_label(char label[50]) {
         }
     return FALSE;
 }
+
+void update_data_addresses(sym_pt head) {
+    if(!head)
+        return;
+    if(head->type == DATA_DIRECTIVE_TYPE)
+        head->value += IC+100;
+    update_data_addresses(head->left);
+    update_data_addresses(head->right);
+
+}

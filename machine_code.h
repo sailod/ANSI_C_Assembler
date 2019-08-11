@@ -22,17 +22,27 @@ typedef struct machine_words {
 } machine_words;
 
 typedef struct machine_word_instruction {
-    int a_r_e:2;
-    int address_operand_dest:2;
-    int address_operand_src:2;
-    int opcode:4;
-    int unused:4;
+    unsigned int a_r_e:2;
+    unsigned int address_operand_dest:2;
+    unsigned int address_operand_src:2;
+    unsigned int opcode:4;
+    unsigned int unused:4;
 } machine_word_instruction;
 
 typedef struct machine_word_instruction_extra {
     int a_r_e:2;
     int data: 12;
 } machine_word_instruction_extra;
+
+typedef enum {
+    IMMEDIATE = 0, DIRECT = 1, PERMANENT_INDEX = 2, DIRECT_REGISTER = 3, UNKNOWN = 20
+} addressing_methods;
+
+typedef struct addressing_method {
+    addressing_methods method;
+    int num_of_words;
+} addressing_method;
+
 
 machine_words * head;
 machine_words * tail;
@@ -55,5 +65,7 @@ machine_words *create_number_words(char *line);
  * Gets the total number of words in memory that this instruction takes, and build the first word of it
  * */
 int get_number_of_instruction_words(char *line, machine_word_instruction *first_word, opcode_p opcode);
+
+addressing_method get_operand_addressing_method(char string[50]);
 
 #endif

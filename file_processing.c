@@ -3,6 +3,7 @@
 #include "symbol_tree.h"
 
 
+void process_line_second_pass(char *p);
 
 /*
  * First Pass Algorithm
@@ -59,6 +60,7 @@ void process_file(char *filename) {
     first_pass(fp);
     if (err_count)
         return;
+    update_data_addresses(NULL);
     second_pass(fp);
     if (err_count)
         return;
@@ -70,9 +72,28 @@ void process_file(char *filename) {
     clean_data();
 }
 
-void second_pass(FILE *pFile) {
 
+
+int second_pass(FILE *fp) {
+    IC = 0;
+    char line[MAX_CODE_LINE];
+    char *line_p;
+    line_p = line;
+    int errors = 0;
+    while (fgets(line, MAX_CODE_LINE, fp)) {
+        line_p = line;
+        lines_count++;
+
+        line_p = strip_blank_chars(line_p);
+        if (is_comment_or_empty(line_p))
+            continue;
+        process_line_second_pass(line_p);
+    }
+
+    return 0;
 }
+
+
 
 void generate_output_files() {
 
@@ -101,6 +122,7 @@ void clean_data() {
 void first_pass(FILE *fp) {
 
     char line[MAX_CODE_LINE];
+
     char *line_p;
     line_p = line;
     while (fgets(line, MAX_CODE_LINE, fp)) {
@@ -117,7 +139,8 @@ void first_pass(FILE *fp) {
         process_line_first_pass(line_p);
     }
 
-    print_symbol_table();
+    if(DEBUG)
+        print_symbol_table();
 
 }
 
@@ -190,6 +213,18 @@ int process_line_first_pass(char *line) {
     }
 }
 
+void process_line_second_pass(char *line) {
+    int is_label = 0;
+
+    /******** Dealing with Label *******************/
+    is_label = find_label(line);
+    if (is_label) {
+        line = go_to_next_field(line);
+    }
+
+
+}
+
 int process_macro(char *line) {
     char *line_pt = line;
     char name[LABEL_MAX_SIZE] = "";
@@ -247,6 +282,10 @@ int process_instruction(char *line, int is_label) {
 
     L = get_number_of_instruction_words(line, first_word, opcode);
 
+    machine_words* word = get_word_int(*first_word);
+    add_machine_words(word);
+
+    IC = IC + L;
 
     return 0;
 }
@@ -373,9 +412,12 @@ int process_data_or_string_line(char *line) {
     }
     else if(isdigit(*line))
     {
-        printf("\nProcessing numbers data store\n");
+
         number_words = create_number_words(line);
-        print_data_machine_words(number_words);
+        if(DEBUG) {
+            printf("\nProcessing numbers data store\n");
+            print_data_machine_words(number_words);
+        }
         add_machine_words(number_words);
     }
     else
@@ -517,17 +559,3 @@ char *strip_number_or_label(char *line, int *value) {
 
 }
 
-int get_operand_addressing_method(char string[50]) {
-    char temp[LABEL_MAX_SIZE];
-    if(string[0] == '#')
-        return IMMEDIATE;
-    else if (strstr(string,"["))
-        return PERMANENT_INDEX;
-    else if (is_register(string))
-        return DIRECT_REGISTER;
-    else if (!strip_label_chars(string,temp))
-        return DIRECT;
-    else
-        return UNKNOWN;
-
-}

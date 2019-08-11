@@ -10,9 +10,6 @@ typedef enum {
     OPS_2, OP_1, NO_OP
 } op_type;
 
-typedef enum {
-    IMMEDIATE = 0, DIRECT = 1, PERMANENT_INDEX = 2, DIRECT_REGISTER = 3, UNKNOWN = 20
-} addressing_method;
 
 typedef struct Opcode *opcode_p;
 

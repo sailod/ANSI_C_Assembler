@@ -35,6 +35,7 @@ sym_pt search_label(char *label, sym_pt head);
 void print_symbol_table_recursion(sym_pt head);
 void print_symbol_table();
 bool is_already_exists_label(char label[50]);
+void update_data_addresses(sym_pt head);
 
 
 #endif
