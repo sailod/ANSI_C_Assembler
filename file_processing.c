@@ -5,6 +5,12 @@
 
 void process_line_second_pass(char *p);
 
+void process_entry_line(char *line);
+
+void process_instruction_second_pass(char *line, Opcode command);
+
+machine_words *create_empty_word();
+
 /*
  * First Pass Algorithm
  * 1.  IC -> 0, DC -> 0.
@@ -60,7 +66,9 @@ void process_file(char *filename) {
     first_pass(fp);
     if (err_count)
         return;
-    update_data_addresses(NULL);
+    update_data_addresses(symbol_head);
+    fp = fopen("example.asm", "r");
+    IC = 0;
     second_pass(fp);
     if (err_count)
         return;
@@ -158,6 +166,7 @@ char *go_to_next_field(char *line) {
 int process_line_first_pass(char *line) {
     {
 
+
         /*char *p=line  ;*/
         int temp = 0;
         int is_label = 0;
@@ -215,12 +224,64 @@ int process_line_first_pass(char *line) {
 
 void process_line_second_pass(char *line) {
     int is_label = 0;
+    char *directive_type_str;
+    int i = 0;
+    int directive_type;
+    sym_pt entry_sym = NULL;
+    char* line_head;
 
     /******** Dealing with Label *******************/
     is_label = find_label(line);
     if (is_label) {
         line = go_to_next_field(line);
     }
+
+    if(*line == '.') {
+        return;
+    }
+
+    line_head = line;
+
+    while (!isspace(*line++)) {
+        i++;
+    }
+    directive_type_str = strndup(line_head, i);
+    directive_type = find_directive_type(directive_type_str);
+
+    if(directive_type == ENTRY_DIRECTIVE_TYPE)
+    {
+        process_entry_line(line);
+        return;
+    }
+
+
+
+    opcode_p opcode = get_opcode_node(directive_type_str);
+    if(!opcode)
+    {
+        print_error(SYNTAX_ERROR,lines_count);
+        return;
+    }
+    else {
+        process_instruction_second_pass(line, *opcode);
+    }
+
+
+
+
+}
+
+void process_instruction_second_pass(char *line, Opcode command) {
+
+}
+
+void process_entry_line(char *line) {
+    /* TODO: complete this method*/
+    char entry_name[LABEL_MAX_SIZE];
+
+    strip_blank_chars(line);
+
+    strip_label_chars(line,line);
 
 
 }
@@ -261,6 +322,8 @@ int process_instruction(char *line, int is_label) {
 
     char instruction[MAX_OPCODE_BITS];
     int L;
+    int i;
+
     if(is_label)
     {
         add_symbol(label,find_directive_type("code"),IC+100);
@@ -277,17 +340,28 @@ int process_instruction(char *line, int is_label) {
     if(!opcode)
         return 0;
 
+    line = strip_blank_chars(line);
 
     machine_word_instruction* first_word = (machine_word_instruction*)malloc(sizeof(machine_word_instruction));
 
     L = get_number_of_instruction_words(line, first_word, opcode);
 
-    machine_words* word = get_word_int(*first_word);
+    machine_words* word = get_word_as_unsigned_int(*first_word);
+    word->address = IC++;
+    word->desc = line;
     add_machine_words(word);
-
-    IC = IC + L;
+    for (int i = 1; i < L; ++i) {
+        word = create_empty_word();
+        word->address = IC++;
+        word->desc = line;
+        add_machine_words(word);
+    }
 
     return 0;
+}
+
+machine_words *create_empty_word() {
+    return (machine_words*)malloc(sizeof(machine_words));
 }
 
 bool find_label(char *line) {
@@ -405,9 +479,11 @@ int process_data_or_string_line(char *line) {
     if(*line == '\"')
     {
         line++;
-        printf("\nProcessing string data store\n");
         string_words = create_string_words(line);
-        print_data_machine_words(string_words);
+        if(DEBUG) {
+            printf("\nProcessing string data store\n");
+            print_data_machine_words(string_words);
+        }
         add_machine_words(string_words);
     }
     else if(isdigit(*line))

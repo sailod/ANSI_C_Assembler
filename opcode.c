@@ -59,15 +59,13 @@ void insert_opcode_node(Opcode *node, int index) {
         node->next = NULL;
     } else {
         temp = hash_table[index];
-        for (int i = 0; i < OPCODES_COUNT - 1; ++i) {
+        for (int i = 0; i < OPCODES_COUNT; ++i) {
             if (hash_table[i] == NULL) {
                 hash_table[i] = node;
                 node->next = NULL;
                 return;
             }
         }
-        temp->next = node;
-        node->next = NULL;
     }
 }
 

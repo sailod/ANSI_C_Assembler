@@ -18,6 +18,7 @@
 typedef struct machine_words {
     int address;
     int value;
+    char* desc;/* stores the actual assembly line - debug purposes*/
     struct machine_words* next;
 } machine_words;
 
@@ -57,8 +58,8 @@ void add_machine_words(machine_words *words);
 void print_data_machine_words(machine_words *words);
 
 machine_words *create_string_words(char *line);
-machine_words* create_machine_word(int address, int value);
-machine_words * get_word_int(machine_word_instruction word);
+machine_words *create_machine_word(int address, int value, char *desc);
+machine_words * get_word_as_unsigned_int(machine_word_instruction word);
 machine_words *create_number_words(char *line);
 
 /*
