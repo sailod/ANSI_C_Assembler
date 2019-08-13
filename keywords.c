@@ -4,7 +4,6 @@
 
 #include "keywords.h"
 
-
 static keyword_p keywords_head = NULL;
 
 void init_keywords_list() {
@@ -65,19 +64,21 @@ int is_keyword(char *word) {
 
 }
 
-bool is_register(char* string)
+int is_register(char* string)
 {
     char* tmp = string;
+    int reg_num;
     if(strlen(string)<2) {
-        return FALSE;
+        return NOT_REGISTER;
     }
     if(*tmp++ != 'r')
-        return FALSE;
+        return NOT_REGISTER;
     if (!isdigit(*tmp))
-        return FALSE;
-    if(*tmp-'0' >=0 && *tmp-'0' <=7)
-        return TRUE;
-    return FALSE;
+        return NOT_REGISTER;
+    reg_num = *tmp-'0';
+    if(reg_num >=0 && reg_num <=7)
+        return reg_num;
+    return NOT_REGISTER;
 }
 
 int search(char *word, keyword_p node) {

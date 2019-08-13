@@ -34,7 +34,7 @@ bool search_entry(char label[50]);
 
 bool search_extern(char label[50]);
 
-int process_instruction(char *line, int label);
+int process_instruction_first_pass(char *line, int label);
 
 void clean_data();
 
@@ -75,6 +75,8 @@ char *strip_number(char *line, int* value);
 char *strip_number_or_label(char *line, int *value);
 
 char *strip_operand_chars(char *line, char label_name[LABEL_MAX_SIZE]);
+
+int strip_operands(char *line, char operands[2][50]);
 
 int process_data_or_string_line(char *line);
 

@@ -7,9 +7,12 @@ void process_line_second_pass(char *p);
 
 void process_entry_line(char *line);
 
+/* process the rest of the command's operands */
 void process_instruction_second_pass(char *line, Opcode command);
 
 machine_words *create_empty_word();
+
+machine_words *create_instruction_extra_words(char *line, machine_word_instruction *pInstruction, int total_words);
 
 /*
  * First Pass Algorithm
@@ -88,6 +91,7 @@ int second_pass(FILE *fp) {
     char *line_p;
     line_p = line;
     int errors = 0;
+    lines_count = 1;
     while (fgets(line, MAX_CODE_LINE, fp)) {
         line_p = line;
         lines_count++;
@@ -130,7 +134,7 @@ void clean_data() {
 void first_pass(FILE *fp) {
 
     char line[MAX_CODE_LINE];
-
+    lines_count = 1;
     char *line_p;
     line_p = line;
     while (fgets(line, MAX_CODE_LINE, fp)) {
@@ -217,7 +221,7 @@ int process_line_first_pass(char *line) {
             /*--------------------------------------*/
 
         else {
-            return process_instruction(line, is_label);
+            return process_instruction_first_pass(line, is_label);
         }
     }
 }
@@ -272,7 +276,25 @@ void process_line_second_pass(char *line) {
 }
 
 void process_instruction_second_pass(char *line, Opcode command) {
+    machine_words* first_word;
+    machine_words* extra=NULL;
+    char *first_operand;
+    int L;
+    int num_of_operands;
 
+    char operands[2][LABEL_MAX_SIZE];
+    num_of_operands = strip_operands(line, operands);
+
+    first_word = get_machine_word_by_address(IC);
+
+    extra = create_instruction_extra_words(line, first_word, L);
+
+    add_machine_words(extra);
+
+}
+
+machine_words *create_instruction_extra_words(char *line, machine_word_instruction *pInstruction, int total_words) {
+    return NULL;
 }
 
 void process_entry_line(char *line) {
@@ -316,7 +338,7 @@ int process_macro(char *line) {
     return 0;
 }
 
-int process_instruction(char *line, int is_label) {
+int process_instruction_first_pass(char *line, int is_label) {
     if(DEBUG)
         printf("Processing Phase 1 instruction: \n\t%s\n",line);
 
@@ -344,9 +366,9 @@ int process_instruction(char *line, int is_label) {
 
     machine_word_instruction* first_word = (machine_word_instruction*)malloc(sizeof(machine_word_instruction));
 
-    L = get_number_of_instruction_words(line, first_word, opcode);
+    L = get_number_of_instruction_words(line, first_word, *opcode);
 
-    machine_words* word = get_word_as_unsigned_int(*first_word);
+    machine_words* word = parse_word_as_unsigned_int(*first_word);
     word->address = IC++;
     word->desc = line;
     add_machine_words(word);
@@ -551,7 +573,7 @@ char *strip_label_chars(char *line, char label_name[LABEL_MAX_SIZE]) {
 
 char *strip_operand_chars(char *line, char label_name[LABEL_MAX_SIZE]) {
     char c;
-    char *name = label_name;
+    char *name;
     char count = 0;
 
     name = label_name;

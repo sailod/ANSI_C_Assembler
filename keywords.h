@@ -5,6 +5,7 @@
 #include "symbol_tree.h"
 #include <stdlib.h>
 #include <string.h>
+#define NOT_REGISTER -1
 
 typedef struct keyword *keyword_p;
 
@@ -23,6 +24,7 @@ int is_keyword(char *word);
 
 int search(char *word, keyword_p node);
 
-bool is_register(char* string);
+/* Checks if the string is one of the registers, if it does the method returns the number representing the register*/
+int is_register(char* string);
 
 #endif /*ASSEMBLER_KEYWORDS_H*/

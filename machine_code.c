@@ -7,8 +7,9 @@ machine_words *head = NULL;
 addressing_method immediate_addressing_method = { .method = IMMEDIATE, .num_of_words = 1};
 addressing_method direct_addressing_method = { .method = DIRECT, .num_of_words = 1};
 addressing_method permanent_index_addressing_method = { .method = PERMANENT_INDEX, .num_of_words = 2};
-addressing_method direct_register_addressing_method = { .method = IMMEDIATE, .num_of_words = 1};
+addressing_method direct_register_addressing_method = { .method = DIRECT_REGISTER, .num_of_words = 1};
 addressing_method unknown_addressing_method = { .method = UNKNOWN, .num_of_words = 0};
+
 
 void print_machine_word(machine_word_instruction word) {
     printf("\n%s", "0000");
@@ -67,10 +68,10 @@ void add_machine_word(machine_words *word) {
 }
 
 void add_machine_word_instruction(machine_word_instruction word) {
-    add_machine_word(get_word_as_unsigned_int(word));
+    add_machine_word(parse_word_as_unsigned_int(word));
 }
 
-char *get_word_string(machine_word_instruction word) {
+char *parse_word_string_represntation(machine_word_instruction word) {
     char *s = (char *) malloc(sizeof(char) * WORD_SIZE);
     char *s_head = s;
     *s = '0';
@@ -104,7 +105,7 @@ char *get_word_string(machine_word_instruction word) {
     return s_head;
 }
 
-machine_words *get_word_as_unsigned_int(machine_word_instruction word) {
+machine_words *parse_word_as_unsigned_int(machine_word_instruction word) {
     /* TODO: finish this function */
     unsigned int new_word_unsigned_int =  word.a_r_e;
     unsigned int temp = word.address_operand_dest;
@@ -218,13 +219,14 @@ machine_words *create_number_words(char *line) {
 }
 
 
-int get_number_of_instruction_words(char *line, machine_word_instruction *first_word, opcode_p opcode) {
+int get_number_of_instruction_words(char *line, machine_word_instruction *first_word, Opcode opcode) {
     int word_count = 1;
     int argument_count;
     char c;
     char argument[LABEL_MAX_SIZE];
     int i;
     char operands[2][LABEL_MAX_SIZE];/* 0 - source operand, 1 dest operand */
+    int num_of_operands;
     addressing_method src_operand;
     addressing_method dest_operand;
     int a_r_e = 0;
@@ -235,20 +237,9 @@ int get_number_of_instruction_words(char *line, machine_word_instruction *first_
     }
 
     line = strip_blank_chars(line);
-    for (i = 0; line = strip_operand_chars(line, operands[i]), *line && argument; i++) {
-        line = strip_blank_chars(line);
-        if (*line == OPERAND_SEPERATOR) {
-            line++;
-            line = strip_blank_chars(line);
-        } else if (*line) {
-            print_error(SYNTAX_ERROR, lines_count);
-            return 0;
-        } else {
-            break;
-        }
-    }
+    num_of_operands = strip_operands(line, operands);
 
-    first_word->opcode = opcode->code;
+    first_word->opcode = opcode.code;
 
     src_operand = get_operand_addressing_method(operands[0]);
     dest_operand = get_operand_addressing_method(operands[1]);
@@ -271,6 +262,21 @@ int get_number_of_instruction_words(char *line, machine_word_instruction *first_
     return word_count;
 }
 
+int strip_operands(char *line, char operands[2][50]) {
+    int j;
+    for (j = 0; line = strip_operand_chars(line, operands[j]), *line; j++) {
+        line = strip_blank_chars(line);
+        if (*line == OPERAND_SEPERATOR) {
+            line++;
+            line = strip_blank_chars(line);
+        } else if (*line) {
+            print_error(SYNTAX_ERROR, lines_count);
+            return ERROR_WHEN_STRIP_OPERANDS;
+        }
+    }
+    return j;
+}
+
 addressing_method get_operand_addressing_method(char string[50]) {
     if(!(*string))
     {
@@ -288,4 +294,16 @@ addressing_method get_operand_addressing_method(char string[50]) {
     else
         return unknown_addressing_method;
 
+}
+
+machine_words *get_machine_word_by_address(int address)
+{
+    machine_words* iterator = head;
+    while(iterator)
+    {
+        if(iterator->address == address)
+            return iterator;
+        iterator=iterator->next;
+    }
+    return NULL;
 }

@@ -27,6 +27,6 @@ int test()
     printf("%d",test);*/
     bool test = (bool)(1 == 3);
    machine_word_instruction x = {2, 2, 2, 2, 0};
-   char* ttttes = get_word_string(x);
+   char* ttttes = parse_word_string_represntation(x);
     return 0;
 }
