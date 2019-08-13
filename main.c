@@ -10,14 +10,19 @@ int test();
 
 int main(int argc, char **argv) {
 
+    char *file_name;
     test((*argv)+1);
+
+
+
     if (argc == 1) {
         printf(UASGE_MESSAGE);
     }
     init_opcode_hash_table();
     init_keywords_list();
     while (--argc) {
-        process_file(*++argv);
+        file_name = *++argv;
+        process_file(strcat(file_name, ASSEMBLY_FILE_EXTEN));
     }
 }
 

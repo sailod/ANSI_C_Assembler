@@ -7,4 +7,8 @@ typedef enum bool{
 } bool;
 
 #define DEBUG 0
+#define ASSEMBLY_FILE_EXTEN ".asm"
+#define ASSEMBLY_EXTERNAL_FILE_EXTEN ".ext"
+#define ASSEMBLY_ENTRIES_FILE_EXTEN ".ent"
+
 #endif

@@ -49,6 +49,12 @@ typedef struct addressing_method {
 machine_words * head;
 machine_words * tail;
 
+extern addressing_method immediate_addressing_method;
+extern addressing_method direct_addressing_method;
+extern addressing_method permanent_index_addressing_method;
+extern addressing_method direct_register_addressing_method;
+extern addressing_method unknown_addressing_method;
+
 /*
  * Declaring prototypes
  */
