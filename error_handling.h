@@ -1,7 +1,6 @@
 #ifndef ASSEMBLER_ERROR_HANDLING_H
 #define ASSEMBLER_ERROR_HANDLING_H
 
-#endif /* ASSEMBLER_ERROR_HANDLING_H */
 typedef enum error_code {
     EMPTY_ERROR, /* for better use, the enum will start from 1, so we put here an empty error.*/
     SYNTAX_ERROR,
@@ -15,8 +14,13 @@ typedef enum error_code {
     LABEL_IS_ALREADY_EXTERN,
     LABEL_IS_ALREADY_ENTRY,
     LABEL_IS_ALREADY_MACRO,
-    BAD_COMMAND_ARGUMENT
+    BAD_COMMAND_ARGUMENT,
+    INSTRUCTION_NOT_FOUND,
+    LABEL_NOT_FOUND,
+    ENTRY_NOT_EXIST
 
 } error_code;
 
 void print_error(error_code err, int line_number);
+
+#endif /* ASSEMBLER_ERROR_HANDLING_H */

@@ -1,6 +1,5 @@
 #ifndef ASSEMBLER_FILE_PROCESSING_H
 #define ASSEMBLER_FILE_PROCESSING_H
-#endif
 
 
 #include <stdio.h>
@@ -12,9 +11,10 @@
 #include "keywords.h"
 #include "opcode.h"
 #include "directives.h"
+#include "machine_code.h"
 
 #define MAX_CODE_LINE 81
-#define WORD_SIZE 10
+#define WORD2_SIZE 10
 #define COMMENT_CHAR ';'
 #define LABEL_SEPARATOR ':'
 #define LABEL_MAX_SIZE 50
@@ -34,7 +34,7 @@ bool search_entry(char label[50]);
 
 bool search_extern(char label[50]);
 
-int process_instruction(char *line, int label);
+int process_instruction_first_pass(char *line, int label);
 
 void clean_data();
 
@@ -46,7 +46,7 @@ void clean_externs_table();
 
 void clean_symbol_table();
 
-void generate_output_files();
+void generate_output_files(char *const filename);
 
 int process_macro(char* line);
 
@@ -54,13 +54,13 @@ void process_file(char *filename);
 
 void first_pass(FILE *fp);
 
-void second_pass(FILE *fp);
+int second_pass(FILE *fp);
 
 short int is_comment_or_empty(char *line);
 
 char *strip_blank_chars(char *line);
 
-bool find_label(char *line);
+bool find_label(char *line, bool print_errors);
 
 bool find_macro(char *line);
 
@@ -72,6 +72,17 @@ char *strip_label_chars(char *line, char label_name[LABEL_MAX_SIZE]);
 
 char *strip_number(char *line, int* value);
 
+char *strip_number_or_label(char *line, int *value);
+
+char *strip_operand_chars(char *line, char label_name[LABEL_MAX_SIZE]);
+
+int strip_operands(char *line, char operands[2][50]);
+
+int process_data_or_string_line(char *line);
+
+void add_symbol(char* label, int directive_type, int address);
+
+
 /*
  * Done declaring prototypes.
  */
@@ -80,3 +91,4 @@ char *strip_number(char *line, int* value);
 int IC, DC, err_count, lines_count;
 char label[MAX_LABEL];
 
+#endif
