@@ -92,12 +92,13 @@ bool is_already_exists_label(char label[50], bool print_errors) {
     return FALSE;
 }
 
-void update_data_addresses(sym_pt head) {
+void update_data_label_addresses(sym_pt head, int last_IC) {
     if(!head)
         return;
     if(head->type == DATA_DIRECTIVE_TYPE)
-        head->value += IC+100;
-    update_data_addresses(head->left);
-    update_data_addresses(head->right);
+        head->value += last_IC+100;
+    update_data_label_addresses(head->left, last_IC);
+    update_data_label_addresses(head->right, last_IC);
 
 }
+

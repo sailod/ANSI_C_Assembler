@@ -70,14 +70,9 @@ void insert_opcode_node(Opcode *node, int index) {
 }
 
 Opcode *get_opcode_node(char *op) {
-    Opcode *temp = NULL;
     for (int i = 0; i < OPCODES_COUNT; ++i) {
         if(hash_table[i] && !strcmp(hash_table[i]->name,op))
             return hash_table[i];
     }
-
-    if (temp == NULL) {
-        print_error(INSTRUCTION_NOT_FOUND, lines_count);
-        return NULL;
-    }
+     print_error(INSTRUCTION_NOT_FOUND, lines_count);
 }

@@ -21,6 +21,7 @@
 typedef struct machine_words {
     int address;
     int value;
+    int type;
     char* desc;/* stores the actual assembly line - debug purposes*/
     struct machine_words* next;
 } machine_words;
@@ -48,7 +49,8 @@ typedef struct addressing_method {
 } addressing_method;
 
 
-machine_words * head;
+machine_words * head_instructions;
+machine_words *head_data;
 machine_words * tail;
 
 extern addressing_method immediate_addressing_method;
@@ -64,14 +66,15 @@ extern addressing_method unknown_addressing_method;
 void print_machine_word(machine_word_instruction word);
 char* parse_instruction_word_string_represntation(machine_word_instruction word);
 char *parse_word_string_represntation(machine_words word);
-void add_machine_words(machine_words *words);
+void add_machine_words(machine_words *words, int type);
 void print_data_machine_words(machine_words *words);
 
 machine_words *create_string_words(char *line);
-machine_words *create_machine_word(int address, int value, char *desc);
+machine_words *create_machine_word(int address, int value, char *desc, int type);
 machine_words * parse_word_as_unsigned_int(machine_word_instruction word);
 machine_words *create_number_words(char *line);
 machine_words *get_machine_word_by_address(int address);
+
 int get_number_of_words(machine_words* head);
 /*
  * Gets the total number of words in memory that this instruction takes, and build the first word of it
@@ -80,5 +83,6 @@ int get_number_of_instruction_words(char *line, machine_word_instruction *first_
 
 addressing_method get_operand_addressing_method(char string[50]);
 
+void update_data_addresses(sym_pt head, int last_IC);
 
 #endif

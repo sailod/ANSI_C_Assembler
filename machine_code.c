@@ -2,7 +2,8 @@
 #include "machine_code.h"
 #include "file_processing.h"
 
-machine_words *head = NULL;
+machine_words *head_instructions = NULL;
+machine_words *head_data = NULL;
 
 addressing_method immediate_addressing_method = {.method = IMMEDIATE, .num_of_words = 1};
 addressing_method direct_addressing_method = {.method = DIRECT, .num_of_words = 1};
@@ -26,26 +27,27 @@ void print_machine_word(machine_word_instruction word) {
 
 }
 
-void add_machine_word(machine_words *word) {
+void add_machine_word(machine_words *word, int type) {
     machine_words *new_word;
     machine_words *latest_word_before;
     machine_words *iterator;
+    machine_words **head = (type == DATA_DIRECTIVE_TYPE || type == STRING_DIRECTIVE_TYPE) ? &head_data: &head_instructions;
 
     if (!word)
         return;
 
-    new_word = create_machine_word(word->address, word->value, word->desc);
+    new_word = create_machine_word(word->address, word->value, word->desc, type);
 
-    if (!head) {
-        head = new_word;
+    if (!*head) {
+        *head = new_word;
         return;
     }
-    iterator = head;
+    iterator = *head;
 
-    /* If needed to insert in head */
+    /* If needed to insert in head_instructions */
     if (word->address < iterator->address) {
-        new_word->next = head;
-        head = new_word;
+        new_word->next = *head;
+        *head = new_word;
         return;
     }
     latest_word_before;
@@ -139,14 +141,11 @@ machine_words *parse_word_as_unsigned_int(machine_word_instruction word) {
 
 }
 
-void add_machine_words(machine_words *words) {
-    machine_words *exists_words_iterator = head;
+void add_machine_words(machine_words *words, int type) {
     machine_words *new_words_iterator = words;
 
-    machine_words *latest_word_before = head;
-
     while (new_words_iterator) {
-        add_machine_word(new_words_iterator);
+        add_machine_word(new_words_iterator, type);
         new_words_iterator = new_words_iterator->next;
     }
 
@@ -178,24 +177,26 @@ machine_words *create_string_words(char *line) {
         /*head_word = malloc(sizeof(machine_words));*/
 
         buffer = head_word;
-        head_word = create_machine_word(IC++, c, line);
+        head_word = create_machine_word(DC, c, line, STRING_DIRECTIVE_TYPE);
         head_word->next = buffer;
 
         DC++;
         line++;
     }
     buffer = head_word;
-    head_word = create_machine_word(IC++, 0, line);
+    head_word = create_machine_word(DC, 0, line, STRING_DIRECTIVE_TYPE);
     head_word->next = buffer;
+    DC++;
 
     return head_word;
 }
 
-machine_words *create_machine_word(int address, int value, char *desc) {
+machine_words *create_machine_word(int address, int value, char *desc, int type) {
     machine_words *new_word = (machine_words *) malloc(sizeof(machine_words));
     new_word->value = value;
     new_word->address = address;
     new_word->desc = strndup(desc, MAX_CODE_LINE);
+    new_word->type = type;
     return new_word;
 }
 
@@ -210,8 +211,7 @@ machine_words *create_number_words(char *line) {
     while (line = strip_number_or_label(line, &new_num_data), line != NULL) {
 
         buffer = head_word;
-        head_word = create_machine_word(IC, new_num_data, line);
-        IC++;
+        head_word = create_machine_word(DC, new_num_data, line, DATA_DIRECTIVE_TYPE);
         DC++;
         head_word->next = buffer;
         line = strip_blank_chars(line);
@@ -271,7 +271,6 @@ int get_number_of_instruction_words(char *line, machine_word_instruction *first_
     first_word->address_operand_src = src_operand.method;
     first_word->address_operand_dest = dest_operand.method;
 
-    /* TODO: Ask Yakir from one hand there is DC starting from zero but in the example in course notebook the data gets the IC */
     first_word->a_r_e = 0;
 
     if (DEBUG) {
@@ -321,11 +320,22 @@ addressing_method get_operand_addressing_method(char string[50]) {
 }
 
 machine_words *get_machine_word_by_address(int address) {
-    machine_words *iterator = head;
+    machine_words *iterator = head_instructions;
     while (iterator) {
         if (iterator->address == address)
             return iterator;
         iterator = iterator->next;
     }
     return NULL;
+}
+
+void update_data_addresses(sym_pt head, int last_IC) {
+    machine_words* iterator = head_data;
+    update_data_label_addresses(head,last_IC);
+
+    while(iterator)
+    {
+        iterator->address+=last_IC + 100;
+        iterator = iterator->next;
+    }
 }
