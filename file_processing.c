@@ -24,7 +24,7 @@ machine_words *process_operand(char string[50], machine_words *pWords);
 
 void set_register_field_in_word(machine_words *word, char *string, int src_or_dest);
 
-void generate_entries_file(sym_pt head, char *filename);
+void generate_entries_file(sym_pt head, char *filename, FILE *fp);
 
 void generate_externals_file(sym_pt head, char *filename);
 
@@ -130,7 +130,14 @@ int second_pass(FILE *fp) {
 
 
 void generate_output_files(char *const filename) {
-    generate_entries_file(symbol_head, filename);
+    FILE* fp;
+    char* full_name = malloc(sizeof(filename)+ sizeof(ASSEMBLY_ENTRIES_FILE_EXTEN));
+    full_name = strcpy(full_name,filename);
+    full_name = strcat(full_name, ASSEMBLY_ENTRIES_FILE_EXTEN);
+
+    fp = fopen(full_name, "a");
+    generate_entries_file(symbol_head, filename, fp);
+    fclose(fp);
     generate_externals_file(symbol_head,filename);
     generate_machine_code_file();
 }
@@ -154,12 +161,11 @@ void generate_externals_file(sym_pt head, char *filename) {
         fprintf(fp, "%s\t%d\n", head->label, head->value);
         fclose(fp);
     }
-    generate_entries_file(head->left, filename);
-    generate_entries_file(head->right, filename);
+    generate_entries_file(head->left, filename, NULL);
+    generate_entries_file(head->right, filename, NULL);
 }
 
-void generate_entries_file(sym_pt head, char *filename) {
-    FILE *fp;
+void generate_entries_file(sym_pt head, char *filename, FILE *fp) {
     char* full_name = malloc(sizeof(filename)+ sizeof(ASSEMBLY_ENTRIES_FILE_EXTEN));
     full_name = strcpy(full_name,filename);
     full_name = strcat(full_name, ASSEMBLY_ENTRIES_FILE_EXTEN);
@@ -168,13 +174,11 @@ void generate_entries_file(sym_pt head, char *filename) {
         return;
 
     if (head->type == ENTRY_DIRECTIVE_TYPE) {
-        fp = fopen(full_name, "a");
         fprintf(fp, "%s\t%d\n", head->label, head->value);
-        fclose(fp);
-        free(full_name);
     }
-    generate_entries_file(head->left, filename);
-    generate_entries_file(head->right, filename);
+    free(full_name);
+    generate_entries_file(head->left, filename, fp);
+    generate_entries_file(head->right, filename, fp);
 }
 
 void clean_symbol_table() {
@@ -521,7 +525,7 @@ int process_instruction_first_pass(char *line, int is_label) {
     int L;
     int i;
 
-    if (is_label && !is_already_exists_label(label, TRUE)) {
+    if (is_label) {
         add_symbol(label, find_directive_type("code"), IC + 100);
 
     }
@@ -649,7 +653,7 @@ int process_directive_first_pass(char *line, int is_label) {
     }
 
 
-    if (is_label && !is_already_exists_label(label, TRUE)) {
+    if (is_label) {
         add_symbol(label, directive_type, IC);
     }
 
