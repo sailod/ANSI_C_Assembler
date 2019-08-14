@@ -65,27 +65,28 @@ void print_symbol_table() {
 
 void add_symbol(char *label, int directive_type, int address) {
     sym_pt new_symbol;
-    if (!is_already_exists_label(label)) {
+    if (!is_already_exists_label(label, 0)) {
         new_symbol = create_symbol_node(label, address, directive_type);
         insert_symbol_to_tree(new_symbol);
     }
 }
 
-bool is_already_exists_label(char label[50]) {
+bool is_already_exists_label(char label[50], bool print_errors) {
     if (is_keyword(label)) {
-        print_error(LABEL_IS_KEYWORD_ERROR, lines_count);
+        if(print_errors){
+        print_error(LABEL_IS_KEYWORD_ERROR, lines_count);}
         return TRUE;
     }
     sym_pt already_exist_sym = search_label(label, symbol_head);
     if (already_exist_sym)
         if (already_exist_sym->type == ENTRY_DIRECTIVE_TYPE) {
-            print_error(LABEL_IS_ALREADY_ENTRY, lines_count);
+            if(print_errors){print_error(LABEL_IS_ALREADY_ENTRY, lines_count);}
             return TRUE;
         } else if (already_exist_sym->type == EXTERN_DIRECTIVE_TYPE) {
-            print_error(LABEL_IS_ALREADY_EXTERN, lines_count);
+            if(print_errors){print_error(LABEL_IS_ALREADY_EXTERN, lines_count);}
             return TRUE;
         } else if (already_exist_sym->type == MACRO_DIRECTIVE_TYPE) {
-            print_error(LABEL_IS_ALREADY_MACRO, lines_count);
+            if(print_errors){print_error(LABEL_IS_ALREADY_MACRO, lines_count);}
             return TRUE;
         }
     return FALSE;

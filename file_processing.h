@@ -46,7 +46,7 @@ void clean_externs_table();
 
 void clean_symbol_table();
 
-void generate_output_files();
+void generate_output_files(char *const filename);
 
 int process_macro(char* line);
 
@@ -60,7 +60,7 @@ short int is_comment_or_empty(char *line);
 
 char *strip_blank_chars(char *line);
 
-bool find_label(char *line);
+bool find_label(char *line, bool print_errors);
 
 bool find_macro(char *line);
 

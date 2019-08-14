@@ -15,6 +15,8 @@
 #define WORD_SIZE 14
 #define OPERAND_SEPERATOR ','
 #define ERROR_WHEN_STRIP_OPERANDS -1
+#define SRC_REGISTER 1
+#define DEST_REGISTER 2
 
 typedef struct machine_words {
     int address;
@@ -60,7 +62,8 @@ extern addressing_method unknown_addressing_method;
  */
 
 void print_machine_word(machine_word_instruction word);
-char* parse_word_string_represntation(machine_word_instruction word);
+char* parse_instruction_word_string_represntation(machine_word_instruction word);
+char *parse_word_string_represntation(machine_words word);
 void add_machine_words(machine_words *words);
 void print_data_machine_words(machine_words *words);
 
@@ -69,6 +72,7 @@ machine_words *create_machine_word(int address, int value, char *desc);
 machine_words * parse_word_as_unsigned_int(machine_word_instruction word);
 machine_words *create_number_words(char *line);
 machine_words *get_machine_word_by_address(int address);
+int get_number_of_words(machine_words* head);
 /*
  * Gets the total number of words in memory that this instruction takes, and build the first word of it
  * */

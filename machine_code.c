@@ -13,16 +13,16 @@ addressing_method unknown_addressing_method = {.method = UNKNOWN, .num_of_words 
 
 void print_machine_word(machine_word_instruction word) {
     printf("\n%s", "0000");
-    printf("%d", word.opcode & (1 << 3) ? 1 : 0);
-    printf("%d", word.opcode & (1 << 2) ? 1 : 0);
-    printf("%d", word.opcode & (1 << 1) ? 1 : 0);
-    printf("%d", word.opcode & 1);
-    printf("%d", word.address_operand_src & (1 << 1) ? 1 : 0);
-    printf("%d", word.address_operand_src & 1);
-    printf("%d", word.address_operand_dest & (1 << 1) ? 1 : 0);
-    printf("%d", word.address_operand_dest & 1);
-    printf("%d", word.a_r_e & (1 << 1) ? 1 : 0);
-    printf("%d", word.a_r_e & 1);
+    printf("%d", word.opcode & (1u << 3) ? 1 : 0);
+    printf("%d", word.opcode & (1u << 2) ? 1 : 0);
+    printf("%d", word.opcode & (1u << 1) ? 1 : 0);
+    printf("%d", word.opcode & 1u);
+    printf("%d", word.address_operand_src & (1u << 1) ? 1 : 0);
+    printf("%d", word.address_operand_src & 1u);
+    printf("%d", word.address_operand_dest & (1u << 1) ? 1 : 0);
+    printf("%d", word.address_operand_dest & 1u);
+    printf("%d", word.a_r_e & (1u << 1) ? 1 : 0);
+    printf("%d", word.a_r_e & 1u);
 
 }
 
@@ -67,11 +67,7 @@ void add_machine_word(machine_words *word) {
     latest_word_before->next = new_word;
 }
 
-void add_machine_word_instruction(machine_word_instruction word) {
-    add_machine_word(parse_word_as_unsigned_int(word));
-}
-
-char *parse_word_string_represntation(machine_word_instruction word) {
+char *parse_instruction_word_string_represntation(machine_word_instruction word) {
     char *s = (char *) malloc(sizeof(char) * WORD_SIZE);
     char *s_head = s;
     *s = '0';
@@ -82,31 +78,46 @@ char *parse_word_string_represntation(machine_word_instruction word) {
     s++;
     *s = '0';
     s++;
-    *s = word.opcode & (1 << 3) ? '1' : '0';
+    *s = word.opcode & (1u << 3) ? '1' : '0';
     s++;
-    *s = word.opcode & (1 << 2) ? '1' : '0';
+    *s = word.opcode & (1u << 2) ? '1' : '0';
     s++;
-    *s = word.opcode & (1 << 1) ? '1' : '0';
+    *s = word.opcode & (1u << 1) ? '1' : '0';
     s++;
-    *s = word.opcode & 1 ? '1' : '0';
+    *s = word.opcode & 1u ? '1' : '0';
     s++;
-    *s = word.address_operand_src & (1 << 1) ? '1' : '0';
+    *s = word.address_operand_src & (1u << 1) ? '1' : '0';
     s++;
-    *s = word.address_operand_src & 1 ? '1' : '0';
+    *s = word.address_operand_src & 1u ? '1' : '0';
     s++;
-    *s = word.address_operand_dest & (1 << 1) ? '1' : '0';
+    *s = word.address_operand_dest & (1u << 1) ? '1' : '0';
     s++;
-    *s = word.address_operand_dest & 1 ? '1' : '0';
+    *s = word.address_operand_dest & 1u ? '1' : '0';
     s++;
-    *s = word.a_r_e & (1 << 1) ? '1' : '0';
+    *s = word.a_r_e & (1u << 1) ? '1' : '0';
     s++;
-    *s = word.a_r_e & 1 ? '1' : '0';
+    *s = word.a_r_e & 1u ? '1' : '0';
+
+    return s_head;
+}
+
+char *parse_word_string_represntation(machine_words word) {
+    unsigned int iterator;
+    char *s = (char *) malloc(sizeof(char) * WORD_SIZE);
+    char *s_head = s;
+
+    for (int i = 0; i < WORD_SIZE; ++i) {
+        iterator = 1u << (WORD_SIZE-1);
+        iterator>>=i;
+
+        *s = (iterator&word.value)?'1':'0';
+        s++;
+    }
 
     return s_head;
 }
 
 machine_words *parse_word_as_unsigned_int(machine_word_instruction word) {
-    /* TODO: finish this function */
     unsigned int new_word_unsigned_int = word.a_r_e;
     unsigned int temp = word.address_operand_dest;
     temp <<= 2;
@@ -173,6 +184,9 @@ machine_words *create_string_words(char *line) {
         DC++;
         line++;
     }
+    buffer = head_word;
+    head_word = create_machine_word(IC++, 0, line);
+    head_word->next = buffer;
 
     return head_word;
 }
@@ -218,6 +232,17 @@ machine_words *create_number_words(char *line) {
     return head_word;
 }
 
+int get_number_of_words(machine_words* head)
+{
+    int count = 0;
+    machine_words* iterator = head;
+    while(iterator!=NULL)
+    {
+        count++;
+        iterator = iterator->next;
+    }
+    return count;
+}
 
 int get_number_of_instruction_words(char *line, machine_word_instruction *first_word, Opcode opcode) {
     int word_count = 1;
@@ -246,8 +271,8 @@ int get_number_of_instruction_words(char *line, machine_word_instruction *first_
     first_word->address_operand_src = src_operand.method;
     first_word->address_operand_dest = dest_operand.method;
 
-    /* TODO: bring the real are value from first command*/
-    first_word->a_r_e = a_r_e;
+    /* TODO: Ask Yakir from one hand there is DC starting from zero but in the example in course notebook the data gets the IC */
+    first_word->a_r_e = 0;
 
     if (DEBUG) {
         print_machine_word(*first_word);
@@ -264,7 +289,7 @@ int get_number_of_instruction_words(char *line, machine_word_instruction *first_
 
 int strip_operands(char *line, char operands[2][50]) {
     int j;
-    for (j = 0; line = strip_operand_chars(line, operands[j]), *line; j++) {
+    for (j = 0; line = strip_operand_chars(line, operands[j]), line; j++) {
         line = strip_blank_chars(line);
         if (*line == OPERAND_SEPERATOR) {
             line++;
@@ -286,7 +311,7 @@ addressing_method get_operand_addressing_method(char string[50]) {
         return immediate_addressing_method;
     else if (strstr(string, "["))
         return permanent_index_addressing_method;
-    else if (is_register(string))
+    else if (is_register(string) != NOT_REGISTER)
         return direct_register_addressing_method;
     else if (strip_label_chars(string, temp))
         return direct_addressing_method;

@@ -11,8 +11,7 @@ int test();
 int main(int argc, char **argv) {
 
     char *file_name;
-    test((*argv)+1);
-
+    test((*argv) + 1);
 
 
     if (argc == 1) {
@@ -22,16 +21,15 @@ int main(int argc, char **argv) {
     init_keywords_list();
     while (--argc) {
         file_name = *++argv;
-        process_file(strcat(file_name, ASSEMBLY_FILE_EXTEN));
+        process_file(file_name);
     }
 }
 
-int test()
-{
-   /* bool test=(bool)(1);
-    printf("%d",test);*/
-    bool test = (bool)(1 == 3);
-   machine_word_instruction x = {2, 2, 2, 2, 0};
-   char* ttttes = parse_word_string_represntation(x);
+int test() {
+    /* bool test=(bool)(1);
+     printf("%d",test);*/
+    bool test = (bool) (1 == 3);
+    machine_word_instruction x = {2, 2, 2, 2, 0};
+    char *ttttes = parse_instruction_word_string_represntation(x);
     return 0;
 }

@@ -13,7 +13,7 @@ void print_error(error_code err, int line_number) {
             printf("Line %d: line should contain more than a label.\n", line_number);
             break;
         case LABEL_ALREADY_EXISTS_ERROR:
-            printf("Line %d: label already exists.\n", line_number);
+            printf("line %d: Previously defined label. \n", line_number);
             break;
         case LABEL_TOO_LONG_ERROR:
             printf("line %d: label contains more than 30 characters.\n", line_number);
@@ -42,17 +42,17 @@ void print_error(error_code err, int line_number) {
             printf("line %d: bad argument[s]\n", line_number);
             break;
         case INSTRUCTION_NOT_FOUND:
-            printf("Line %d: opcode was not found!", line_number);
+            printf("line %d: unrecognized insruction. \n", line_number);
             break;
-        case 40:
-            printf("line %d: label cannot be a directive. \n", line_number);
+        case LABEL_NOT_FOUND:
+            printf("Line %d: label was not defined in the file \n", line_number);
             break;
-        case 41:
-            printf("line %d: Previously defined label. \n", line_number);
+        case ENTRY_NOT_EXIST:
+            printf("Line %d: entry was not defined in the file \n", line_number);
             break;
 
-        case 74:
-            printf("line %d: unrecognized insruction. \n", line_number);
+        case 40:
+            printf("line %d: label cannot be a directive. \n", line_number);
             break;
 
         case 50:
@@ -70,9 +70,6 @@ void print_error(error_code err, int line_number) {
             break;
         case 114:
             printf("Line %d:no character[s] between the quotation marks ", line_number);
-            break;
-        case 115:
-            printf("Line %d: label was not defined in the file \n", line_number);
             break;
         case 116:
 

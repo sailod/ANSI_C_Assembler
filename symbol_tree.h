@@ -34,7 +34,7 @@ void add_symbol(char* label, int directive_type, int address);
 sym_pt search_label(char *label, sym_pt head);
 void print_symbol_table_recursion(sym_pt head);
 void print_symbol_table();
-bool is_already_exists_label(char label[50]);
+bool is_already_exists_label(char label[50], bool print_errors);
 void update_data_addresses(sym_pt head);
 
 
