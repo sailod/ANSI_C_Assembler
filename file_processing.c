@@ -140,11 +140,17 @@ void generate_output_files(char *const filename) {
     char* full_name = malloc(sizeof(filename)+ sizeof(ASSEMBLY_ENTRIES_FILE_EXTEN));
     full_name = strcpy(full_name,filename);
     full_name = strcat(full_name, ASSEMBLY_ENTRIES_FILE_EXTEN);
-
     fp = fopen(full_name, "a");
     generate_entries_file(symbol_head, filename, fp);
     fclose(fp);
-    generate_externals_file(symbol_head, filename, NULL);
+
+    full_name = malloc(sizeof(filename)+ sizeof(ASSEMBLY_EXTERNAL_FILE_EXTEN));
+    full_name = strcpy(full_name,filename);
+    full_name = strcat(full_name, ASSEMBLY_EXTERNAL_FILE_EXTEN);
+    fp = fopen(full_name, "a");
+    generate_externals_file(symbol_head, filename,fp);
+    fclose(fp);
+
     generate_machine_code_file();
 }
 
@@ -303,8 +309,6 @@ void process_line_second_pass(char *line) {
     sym_pt entry_sym = NULL;
     char *line_head;
 
-    if(strstr(line,"END"))
-        printf("BREAKPOINT");
 
     /******** Dealing with Label *******************/
     is_label = find_label(line, FALSE);
