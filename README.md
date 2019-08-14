@@ -7,7 +7,7 @@ This Assembler written in C ANSI,
 Example:
 
 example.as:
-```json
+```nasm
 ; file example.as
 
 .entry LIST
