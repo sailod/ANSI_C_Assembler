@@ -3,6 +3,7 @@
 */
 
 #include "keywords.h"
+#include "file_processing.h"
 
 static keyword_p keywords_head = NULL;
 
@@ -46,7 +47,7 @@ void insert_keyword(char *value, keyword_p *head) {
     }
     if (!*head) {
         *head = (keyword_p) malloc(sizeof(keyword));
-        (*head)->value = strdup(value);
+        (*head)->value = strdup_local(value);
         /* initialize the children to null */
         (*head)->left = 0;
         (*head)->right = 0;
@@ -68,7 +69,7 @@ int is_register(char* string)
 {
     char* tmp = string;
     int reg_num;
-    if(strlen(string)<2) {
+    if(strlen_local(string)<2) {
         return NOT_REGISTER;
     }
     if(*tmp++ != 'r')

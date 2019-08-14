@@ -82,6 +82,13 @@ int process_data_or_string_line(char *line);
 
 void add_symbol(char* label, int directive_type, int address);
 
+char *strndup_local(const char *s, size_t n);
+
+char *strdup_local(char *src);
+
+size_t strlen_local(const char *str);
+
+size_t strnlen_local(const char *s, size_t max_len);
 
 /*
  * Done declaring prototypes.

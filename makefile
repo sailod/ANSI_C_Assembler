@@ -1,7 +1,7 @@
 CC=gcc
 CFLAGS=-Wall -ansi -pedantic
 
-OBJECTS= directives.o error_handling.o file_processing.o keywords.o opcode.o symbol_tree.o
+OBJECTS= main.o directives.o error_handling.o file_processing.o keywords.o opcode.o symbol_tree.o extern_table.o machine_code.o
 
 assembler:  $(OBJECTS)
 	$(CC) $(CFLAGS) -g $(OBJECTS)  -o assembler
@@ -24,6 +24,19 @@ opcode.o: opcode.c opcode.h
 symbol_tree.o: symbol_tree.c symbol_tree.h
 	$(CC) $(CFLAGS) -c symbol_tree.c -o symbol_tree.o
 
+machine_code.o: machine_code.c machine_code.h
+	$(CC) $(CFLAGS) -c machine_code.c -o machine_code.o
+
+extern_table.o: extern_table.c extern_table.h
+	$(CC) $(CFLAGS) -c extern_table.c -o extern_table.o
+
+main.o: main.c
+	$(CC) $(CFLAGS) -c main.c -o main.o
+
+
 clean: 	
 	rm -f assembler
 	rm -f *.o
+	rm -f example.ob
+	rm -f example.ent
+	rm -f example.ext

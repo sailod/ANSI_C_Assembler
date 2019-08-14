@@ -53,13 +53,12 @@ void init_opcode_hash_table() {
 }
 
 void insert_opcode_node(Opcode *node, int index) {
-    Opcode *temp;
+    int i;
     if (hash_table[index] == NULL) {
         hash_table[index] = node;
         node->next = NULL;
     } else {
-        temp = hash_table[index];
-        for (int i = 0; i < OPCODES_COUNT; ++i) {
+        for (i = 0; i < OPCODES_COUNT; ++i) {
             if (hash_table[i] == NULL) {
                 hash_table[i] = node;
                 node->next = NULL;
@@ -70,9 +69,11 @@ void insert_opcode_node(Opcode *node, int index) {
 }
 
 Opcode *get_opcode_node(char *op) {
-    for (int i = 0; i < OPCODES_COUNT; ++i) {
+    int i;
+    for (i = 0; i < OPCODES_COUNT; ++i) {
         if(hash_table[i] && !strcmp(hash_table[i]->name,op))
             return hash_table[i];
     }
      print_error(INSTRUCTION_NOT_FOUND, lines_count);
+    return NULL;
 }

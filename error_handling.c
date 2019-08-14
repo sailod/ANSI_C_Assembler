@@ -50,11 +50,10 @@ void print_error(error_code err, int line_number) {
         case ENTRY_NOT_EXIST:
             printf("Line %d: entry was not defined in the file \n", line_number);
             break;
-
-        case 40:
-            printf("line %d: label cannot be a directive. \n", line_number);
+        case EMPTY_ERROR:
+            printf("line %d: unknown error with this line. \n", line_number);
             break;
-
+/*
         case 50:
             printf("line %d: To many characters for one line. The number of characters per line must be less than 80.\n",
                    line_number);
@@ -79,7 +78,7 @@ void print_error(error_code err, int line_number) {
             break;
         case 118:
             printf("Line %d: Error: expecting argument...\n", line_number);
-            break;
+            break;*/
     }
 
 }
