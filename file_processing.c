@@ -1,7 +1,4 @@
 #include "file_processing.h"
-#include "machine_code.h"
-#include "symbol_tree.h"
-#include "extern_table.h"
 
 addressing_method immediate_addressing_method;
 addressing_method direct_addressing_method;

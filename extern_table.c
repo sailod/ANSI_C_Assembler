@@ -3,7 +3,6 @@
 */
 
 #include "extern_table.h"
-#include "file_processing.h"
 
 externals_table *extern_head = NULL;
 
