@@ -9,31 +9,6 @@ addressing_method permanent_index_addressing_method;
 addressing_method direct_register_addressing_method;
 addressing_method unknown_addressing_method;
 
-void process_line_second_pass(char *p);
-
-void process_entry_line(char *line);
-
-/* process the rest of the command's operands */
-void process_instruction_second_pass(char *line, Opcode command);
-
-machine_words *create_empty_word();
-
-machine_words *create_instruction_extra_words(char *line, machine_word_instruction *pInstruction, int total_words,
-                                              char operands[2][LABEL_MAX_SIZE]);
-
-machine_words *process_operand(char string[50], machine_words *pWords);
-
-void set_register_field_in_word(machine_words *word, char *string, int src_or_dest);
-
-void generate_entries_file(sym_pt head, FILE *fp);
-
-void generate_externals_file(FILE *fp);
-
-void generate_machine_code_file(FILE *fp);
-
-char *parse_special_base_4(int value);
-
-externals_table *extern_head;
 
 /*
  * First Pass Algorithm
@@ -110,11 +85,11 @@ void process_file(char *filename) {
 
     fclose(fp);
     generate_output_files(filename);
-    clean_symbol_table();
-    clean_externs_table();
+    clean_symbol_table(symbol_head);
+    clean_externs_table(extern_head);
     clean_entries_table();
-    clean_code();
-    clean_data();
+    clean_code(head_instructions);
+    clean_data(head_data);
 }
 
 
@@ -169,6 +144,8 @@ void generate_machine_code_file(FILE *fp) {
     machine_words *iterator = head_instructions;
     while (iterator) {
         fprintf(fp, "%d\t%s\n", iterator->address, parse_special_base_4(iterator->value));
+
+
         iterator = iterator->next;
     }
     iterator = head_data;
@@ -232,24 +209,33 @@ void generate_entries_file(sym_pt head, FILE *fp) {
     generate_entries_file(head->right, fp);
 }
 
-void clean_symbol_table() {
-
+void clean_symbol_table(sym_pt head) {
+    if(!head)
+        return;
+    clean_symbol_table(head->left);
+    clean_symbol_table(head->left);
+    free(head);
 }
 
-void clean_externs_table() {
-
+void clean_externs_table(externals_table *head) {
+    if(!head)
+        return;
+    clean_externs_table(head->next);
+    free(head);
 }
 
-void clean_entries_table() {
-
+void clean_code(machine_words *head) {
+    if(!head)
+        return;
+    clean_code(head->next);
+    free(head);
 }
 
-void clean_code() {
-
-}
-
-void clean_data() {
-
+void clean_data(machine_words *head) {
+    if(!head)
+        return;
+    clean_data(head->next);
+    free(head);
 }
 
 void first_pass(FILE *fp) {
@@ -368,7 +354,7 @@ void process_line_second_pass(char *line) {
     while (!isspace(*line++)) {
         i++;
     }
-    directive_type_str = strndup_local(line_head,i);
+    directive_type_str = strndup_local(line_head, i);
     directive_type = find_directive_type(directive_type_str);
 
 
@@ -408,7 +394,6 @@ void process_instruction_second_pass(char *line, Opcode command) {
     int num_of_operands;
     int num_of_total_words = get_number_of_instruction_words(line, empty, command);
 
-
     if (num_of_total_words == 1)
         return;
 
@@ -435,7 +420,7 @@ void process_instruction_second_pass(char *line, Opcode command) {
         }
     } else {
         for (i = 0; i < num_of_operands; ++i) {
-            current_word = process_operand(operands[i], current_word);
+            current_word = process_operand(operands[i], current_word, (i == 0) ? SRC_REGISTER : DEST_REGISTER);
         }
     }
 
@@ -455,12 +440,16 @@ void set_register_field_in_word(machine_words *word, char *string, int src_or_de
     word->value |= value;
 }
 
-machine_words *process_operand(char operand[LABEL_MAX_SIZE], machine_words *current_word) {
+machine_words *process_operand(char operand[50], machine_words *current_word, int operand_type) {
     int immediate_value;
     int address;
+    unsigned int register_num;
+    char* operand_head;
+    char *operand_address;
+    int i;
+    sym_pt label;
 
     addressing_methods method = get_operand_addressing_method(operand).method;
-    sym_pt label;
     switch (method) {
         case IMMEDIATE:
             strip_number_or_label(++operand, &immediate_value);
@@ -475,28 +464,50 @@ machine_words *process_operand(char operand[LABEL_MAX_SIZE], machine_words *curr
                 return current_word->next;
             }
             if (label->type == EXTERN_DIRECTIVE_TYPE) {
-                label->value = current_word->address;
                 add_to_externals(label->label, current_word->address);
             }
             current_word->value = (label->value) << 2;
 
             /* set A R E field */
-            current_word->value = (label->type == EXTERN_DIRECTIVE_TYPE) ? (current_word->value) | 1u : 2u;
+            current_word->value = (label->type == EXTERN_DIRECTIVE_TYPE) ? (current_word->value) | 1u : (current_word->value) | 2u;
             return current_word->next;
         case PERMANENT_INDEX:
-            operand = strip_number_or_label(operand, &address);
-            current_word->value = address;
+            operand_head = operand;
+            i = 0;
+            while(*operand  != '[')
+            {
+                i++;
+                operand++;
+            }
+            operand_address = strndup_local(operand_head,i);
+            label = search_label(operand_address,symbol_head);
+            address = label->value;
+            address<<=2;
+            if(label->type == EXTERN_DIRECTIVE_TYPE)
+                address |= 1;
+            else
+                address |= 2;
+
+            current_word->value =address;
             current_word = current_word->next;
             operand++;
 
             strip_number_or_label(operand, &address);
+            address<<=2;
             current_word->value = address;
             return current_word->next;
 
         case DIRECT_REGISTER:
-            current_word->value = is_register(operand);
+            register_num = is_register(operand);
+            if (operand_type == SRC_REGISTER)
+                register_num <<= 5;
+            else if (operand_type == DEST_REGISTER)
+                register_num <<= 2;
+            else
+                printf("Unrecognized operand type at line: %d", lines_count);
+
+            current_word->value = register_num;
             return current_word->next;
-            break;
         default:
             printf("Unable to create operands extra words for operand: %s", operand);
             break;
@@ -505,10 +516,6 @@ machine_words *process_operand(char operand[LABEL_MAX_SIZE], machine_words *curr
     return NULL;
 }
 
-machine_words *create_instruction_extra_words(char *line, machine_word_instruction *pInstruction, int total_words,
-                                              char operands[2][LABEL_MAX_SIZE]) {
-    return NULL;
-}
 
 void process_entry_line(char *line) {
     char entry_name[LABEL_MAX_SIZE];
@@ -863,22 +870,20 @@ char *strip_number_or_label(char *line, int *value) {
     return line;
 }
 
-char *strndup_local (const char *s, size_t n)
-{
+char *strndup_local(const char *s, size_t n) {
     char *result;
     size_t len = strnlen_local(s, n);
 
-    result = (char *) malloc (len + 1);
+    result = (char *) malloc(len + 1);
     if (!result)
         return 0;
 
     result[len] = '\0';
-    return (char *) memcpy (result, s, len);
+    return (char *) memcpy(result, s, len);
 }
 
 
-char *strdup_local(char *src)
-{
+char *strdup_local(char *src) {
     char *str;
     char *p;
     int len = 0;
@@ -893,18 +898,15 @@ char *strdup_local(char *src)
     return str;
 }
 
-size_t strlen_local(const char *str)
-{
+size_t strlen_local(const char *str) {
     const char *s;
 
-    for (s = str; *s; ++s)
-        ;
+    for (s = str; *s; ++s);
     return (s - str);
 }
 
-size_t strnlen_local(const char *s, size_t max_len)
-{
+size_t strnlen_local(const char *s, size_t max_len) {
     size_t i = 0;
-    for(; (i < max_len) && s[i]; ++i);
+    for (; (i < max_len) && s[i]; ++i);
     return i;
 }

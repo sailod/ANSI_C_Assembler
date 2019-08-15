@@ -4,10 +4,10 @@
 machine_words *head_instructions = NULL;
 machine_words *head_data = NULL;
 
-addressing_method immediate_addressing_method = { IMMEDIATE,  1};
+addressing_method immediate_addressing_method = {IMMEDIATE, 1};
 addressing_method direct_addressing_method = {DIRECT, 1};
-addressing_method permanent_index_addressing_method = { PERMANENT_INDEX,  2};
-addressing_method direct_register_addressing_method = { DIRECT_REGISTER,  1};
+addressing_method permanent_index_addressing_method = {PERMANENT_INDEX, 2};
+addressing_method direct_register_addressing_method = {DIRECT_REGISTER, 1};
 addressing_method unknown_addressing_method = {UNKNOWN, 0};
 
 
@@ -30,7 +30,8 @@ void add_machine_word(machine_words *word, int type) {
     machine_words *new_word;
     machine_words *latest_word_before;
     machine_words *iterator;
-    machine_words **head = (type == DATA_DIRECTIVE_TYPE || type == STRING_DIRECTIVE_TYPE) ? &head_data: &head_instructions;
+    machine_words **head = (type == DATA_DIRECTIVE_TYPE || type == STRING_DIRECTIVE_TYPE) ? &head_data
+                                                                                          : &head_instructions;
 
     if (!word)
         return;
@@ -109,10 +110,10 @@ char *parse_word_string_represntation(machine_words word) {
     char *s_head = s;
 
     for (i = 0; i < WORD_SIZE; ++i) {
-        iterator = 1u << (WORD_SIZE-1);
-        iterator>>=i;
+        iterator = 1u << (WORD_SIZE - 1);
+        iterator >>= i;
 
-        *s = (iterator&word.value)?'1':'0';
+        *s = (iterator & word.value) ? '1' : '0';
         s++;
     }
 
@@ -232,12 +233,10 @@ machine_words *create_number_words(char *line) {
     return head_word;
 }
 
-int get_number_of_words(machine_words* head)
-{
+int get_number_of_words(machine_words *head) {
     int count = 0;
-    machine_words* iterator = head;
-    while(iterator!=NULL)
-    {
+    machine_words *iterator = head;
+    while (iterator != NULL) {
         count++;
         iterator = iterator->next;
     }
@@ -251,21 +250,22 @@ int get_number_of_instruction_words(char *line, machine_word_instruction *first_
     addressing_method src_operand;
     addressing_method dest_operand;
 
+    first_word->opcode = opcode.code;
+
     if (!(*line)) {
         return 1;
     }
 
-    line = strip_blank_chars(line);
     num_of_operands = strip_operands(line, operands);
-    if(!num_of_operands)
+    if (!num_of_operands) {
         return 1;
+    }
 
     src_operand = get_operand_addressing_method(operands[0]);
     dest_operand = get_operand_addressing_method(operands[1]);
 
-    first_word->opcode = opcode.code;
-    first_word->address_operand_src = src_operand.method;
-    first_word->address_operand_dest = dest_operand.method;
+    first_word->address_operand_src = (num_of_operands == 1) ? dest_operand.method : src_operand.method;
+    first_word->address_operand_dest = (num_of_operands == 1) ? src_operand.method : dest_operand.method;
 
     first_word->a_r_e = 0;
 
@@ -326,12 +326,11 @@ machine_words *get_machine_word_by_address(int address) {
 }
 
 void update_data_addresses(sym_pt head, int last_IC) {
-    machine_words* iterator = head_data;
-    update_data_label_addresses(head,last_IC);
+    machine_words *iterator = head_data;
+    update_data_label_addresses(head, last_IC);
 
-    while(iterator)
-    {
-        iterator->address+=last_IC + 100;
+    while (iterator) {
+        iterator->address += last_IC;
         iterator = iterator->next;
     }
 }

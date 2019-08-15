@@ -107,8 +107,9 @@ bool is_already_exists_label(char label[50], bool print_errors) {
 void update_data_label_addresses(sym_pt head, int last_IC) {
     if (!head)
         return;
-    if (head->type == DATA_DIRECTIVE_TYPE)
-        head->value += last_IC + 100;
+
+    if (head->type == DATA_DIRECTIVE_TYPE || head->type == STRING_DIRECTIVE_TYPE)
+        head->value += last_IC;
     update_data_label_addresses(head->left, last_IC);
     update_data_label_addresses(head->right, last_IC);
 
