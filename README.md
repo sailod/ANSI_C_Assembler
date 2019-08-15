@@ -31,17 +31,17 @@ K: .data 22
 .extern L3
 ```
 example.ent:
-```json
+```
 LOOP	104
 LIST	232
 ```
 example.ext:
-```json
+```
 W	119
 L3	121
 ```
 example.ob:
-```json
+```
 100	****!%*
 101	******!
 102	***!%%*
