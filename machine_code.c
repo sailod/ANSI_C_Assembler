@@ -1,3 +1,4 @@
+#include "file_processing.h"
 #include <values.h>
 #include "machine_code.h"
 
@@ -333,4 +334,11 @@ void update_data_addresses(sym_pt head, int last_IC) {
         iterator->address += last_IC;
         iterator = iterator->next;
     }
+}
+
+void clean_data(machine_words *head) {
+    if(!head)
+        return;
+    clean_data(head->next);
+    free(head);
 }

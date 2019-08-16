@@ -39,8 +39,6 @@ int process_instruction_first_pass(char *line, int label);
 
 void generate_output_files(char *const filename);
 
-void clean_data(machine_words *head);
-
 void clean_code(machine_words *head);
 
 void clean_entries_table();

@@ -11,6 +11,8 @@
 #include "keywords.h"
 #include "opcode.h"
 #include "file_processing.h"
+#include "directives.h"
+#include "extern_table.h"
 
 #define WORD_SIZE 14
 #define OPERAND_SEPERATOR ','
@@ -84,5 +86,7 @@ int get_number_of_instruction_words(char *line, machine_word_instruction *first_
 addressing_method get_operand_addressing_method(char string[50]);
 
 void update_data_addresses(sym_pt head, int last_IC);
+
+void clean_data(machine_words *head);
 
 #endif

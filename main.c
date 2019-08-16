@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include "file_processing.h"
+#include "machine_code.h"
 #include "opcode.h"
 #include "keywords.h"
-#include "machine_code.h"
 
 #define UASGE_MESSAGE "Usage: assemble an assembly code. by files provided in the terminal."
 

@@ -1,5 +1,5 @@
-#include "machine_code.h"
 #include "file_processing.h"
+#include "machine_code.h"
 #include "symbol_tree.h"
 
 sym_pt symbol_head = NULL;

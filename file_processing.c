@@ -1,4 +1,5 @@
 #include "file_processing.h"
+#include "machine_code.h"
 
 addressing_method immediate_addressing_method;
 addressing_method direct_addressing_method;
@@ -84,7 +85,6 @@ void process_file(char *filename) {
     generate_output_files(filename);
     clean_symbol_table(symbol_head);
     clean_externs_table(extern_head);
-    clean_entries_table();
     clean_code(head_instructions);
     clean_data(head_data);
 }
@@ -210,7 +210,7 @@ void clean_symbol_table(sym_pt head) {
     if(!head)
         return;
     clean_symbol_table(head->left);
-    clean_symbol_table(head->left);
+    clean_symbol_table(head->right);
     free(head);
 }
 
@@ -225,13 +225,6 @@ void clean_code(machine_words *head) {
     if(!head)
         return;
     clean_code(head->next);
-    free(head);
-}
-
-void clean_data(machine_words *head) {
-    if(!head)
-        return;
-    clean_data(head->next);
     free(head);
 }
 
