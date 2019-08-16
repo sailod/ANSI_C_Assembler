@@ -1,6 +1,5 @@
 #include "file_processing.h"
 #include "machine_code.h"
-#include "symbol_tree.h"
 
 addressing_method immediate_addressing_method;
 addressing_method direct_addressing_method;
@@ -8,27 +7,6 @@ addressing_method permanent_index_addressing_method;
 addressing_method direct_register_addressing_method;
 addressing_method unknown_addressing_method;
 
-void process_line_second_pass(char *p);
-
-void process_entry_line(char *line);
-
-/* process the rest of the command's operands */
-void process_instruction_second_pass(char *line, Opcode command);
-
-machine_words *create_empty_word();
-
-machine_words *create_instruction_extra_words(char *line, machine_word_instruction *pInstruction, int total_words,
-                                              char operands[2][LABEL_MAX_SIZE]);
-
-machine_words *process_operand(char string[50], machine_words *pWords);
-
-void set_register_field_in_word(machine_words *word, char *string, int src_or_dest);
-
-void generate_entries_file(sym_pt head, char *filename, FILE *fp);
-
-void generate_externals_file(sym_pt head, char *filename);
-
-void generate_machine_code_file();
 
 /*
  * First Pass Algorithm
@@ -77,40 +55,45 @@ void generate_machine_code_file();
 
 
 void process_file(char *filename) {
-    char* file_name_without_ext = malloc(sizeof(filename));
-    file_name_without_ext = strcpy(file_name_without_ext,filename);
-    FILE *fp = fopen(strcat(filename, ASSEMBLY_OBJECTS_FILE_EXTEN), "r");
+    FILE *fp;
+    int IC_after_first_pass;
+    char *file_name_copy = malloc(sizeof(filename));
+    file_name_copy = strcpy(file_name_copy, filename);
+    file_name_copy = strcat(file_name_copy, ASSEMBLY_FILE_EXTEN);
+    fp = fopen(file_name_copy, "r");
     if (!fp) {
-        perror("Error while opening file`");
+        perror("Error while opening file assembly file");
     }
-
+    IC = 100;
+    DC = 0;
+    /* Theres a memory leak in the first pass */
     first_pass(fp);
     if (err_count)
         return;
     fclose(fp);
-    update_data_addresses(symbol_head);
-    fp = fopen(filename, "r");
-    IC = 0;
+    IC_after_first_pass = IC;
+    update_data_addresses(symbol_head, IC_after_first_pass);
+
+    fp = fopen(file_name_copy, "r");
+    IC = 100;
+    DC = 0;
     second_pass(fp);
     if (err_count)
         return;
 
     fclose(fp);
-    generate_output_files(file_name_without_ext);
-    clean_symbol_table();
-    clean_externs_table();
-    clean_entries_table();
-    clean_code();
-    clean_data();
+    generate_output_files(filename);
+    clean_symbol_table(symbol_head);
+    clean_externs_table(extern_head);
+    clean_code(head_instructions);
+    clean_data(head_data);
 }
 
 
 int second_pass(FILE *fp) {
-    IC = 0;
     char line[MAX_CODE_LINE];
     char *line_p;
     line_p = line;
-    int errors = 0;
     lines_count = 1;
     while (fgets(line, MAX_CODE_LINE, fp)) {
         line_p = line;
@@ -130,82 +113,126 @@ int second_pass(FILE *fp) {
 
 
 void generate_output_files(char *const filename) {
-    FILE* fp;
-    char* full_name = malloc(sizeof(filename)+ sizeof(ASSEMBLY_ENTRIES_FILE_EXTEN));
-    full_name = strcpy(full_name,filename);
-    full_name = strcat(full_name, ASSEMBLY_ENTRIES_FILE_EXTEN);
-
-    fp = fopen(full_name, "a");
-    generate_entries_file(symbol_head, filename, fp);
-    fclose(fp);
-    generate_externals_file(symbol_head,filename);
-    generate_machine_code_file();
-}
-
-void generate_machine_code_file() {
-
-
-}
-
-void generate_externals_file(sym_pt head, char *filename) {
     FILE *fp;
-    char* full_name = malloc(sizeof(filename)+ sizeof(ASSEMBLY_ENTRIES_FILE_EXTEN));
-    full_name = strcpy(full_name,filename);
+    char *full_name = malloc(sizeof(filename) + sizeof(ASSEMBLY_ENTRIES_FILE_EXTEN));
+    full_name = strcpy(full_name, filename);
+    full_name = strcat(full_name, ASSEMBLY_ENTRIES_FILE_EXTEN);
+    fp = fopen(full_name, "a");
+    generate_entries_file(symbol_head, fp);
+    fclose(fp);
+
+    full_name = malloc(sizeof(filename) + sizeof(ASSEMBLY_EXTERNAL_FILE_EXTEN));
+    full_name = strcpy(full_name, filename);
     full_name = strcat(full_name, ASSEMBLY_EXTERNAL_FILE_EXTEN);
+    fp = fopen(full_name, "a");
+    generate_externals_file(fp);
+    fclose(fp);
 
-    if (!head)
-        return;
 
-    if (head->type == EXTERN_DIRECTIVE_TYPE) {
-        fp = fopen(full_name, "a");
-        fprintf(fp, "%s\t%d\n", head->label, head->value);
-        fclose(fp);
-    }
-    generate_entries_file(head->left, filename, NULL);
-    generate_entries_file(head->right, filename, NULL);
+    full_name = malloc(sizeof(filename) + sizeof(ASSEMBLY_OBJECTS_FILE_EXTEN));
+    full_name = strcpy(full_name, filename);
+    full_name = strcat(full_name, ASSEMBLY_OBJECTS_FILE_EXTEN);
+    fp = fopen(full_name, "a");
+    generate_machine_code_file(fp);
+    fclose(fp);
 }
 
-void generate_entries_file(sym_pt head, char *filename, FILE *fp) {
-    char* full_name = malloc(sizeof(filename)+ sizeof(ASSEMBLY_ENTRIES_FILE_EXTEN));
-    full_name = strcpy(full_name,filename);
-    full_name = strcat(full_name, ASSEMBLY_ENTRIES_FILE_EXTEN);
+void generate_machine_code_file(FILE *fp) {
+    machine_words *iterator = head_instructions;
+    while (iterator) {
+        fprintf(fp, "%d\t%s\n", iterator->address, parse_special_base_4(iterator->value));
 
+
+        iterator = iterator->next;
+    }
+    iterator = head_data;
+    while (iterator) {
+        fprintf(fp, "%d\t%s\n", iterator->address, parse_special_base_4(iterator->value));
+        iterator = iterator->next;
+    }
+}
+
+char *parse_special_base_4(int value) {
+    char *parsed = malloc(sizeof(WORD_SIZE / 2) + 1);
+    int i;
+    unsigned int isolator;
+    unsigned int isolated;
+    parsed += WORD_SIZE / 2;
+    *parsed = '\0';
+    parsed--;
+    for (i = 0; i < (WORD_SIZE / 2); ++i) {
+        isolator = 3u << i * 2;
+        isolated = isolator & value;
+        isolated >>= i * 2;
+        switch (isolated) {
+            case 0:
+                *parsed = '*';
+                parsed--;
+                break;
+            case 1:
+                *parsed = '#';
+                parsed--;
+                break;
+            case 2:
+                *parsed = '%';
+                parsed--;
+                break;
+            case 3:
+                *parsed = '!';
+                parsed--;
+                break;
+        }
+    }
+    return ++parsed;
+}
+
+void generate_externals_file(FILE *fp) {
+    externals_table *iterator = extern_head;
+    while (iterator) {
+        fprintf(fp, "%s\t%d\n", iterator->external_name, iterator->address);
+        iterator = iterator->next;
+    }
+}
+
+void generate_entries_file(sym_pt head, FILE *fp) {
     if (!head)
         return;
 
     if (head->type == ENTRY_DIRECTIVE_TYPE) {
         fprintf(fp, "%s\t%d\n", head->label, head->value);
     }
-    free(full_name);
-    generate_entries_file(head->left, filename, fp);
-    generate_entries_file(head->right, filename, fp);
+
+    generate_entries_file(head->left, fp);
+    generate_entries_file(head->right, fp);
 }
 
-void clean_symbol_table() {
-
+void clean_symbol_table(sym_pt head) {
+    if (!head)
+        return;
+    clean_symbol_table(head->left);
+    clean_symbol_table(head->right);
+    free(head);
 }
 
-void clean_externs_table() {
-
+void clean_externs_table(externals_table *head) {
+    if (!head)
+        return;
+    clean_externs_table(head->next);
+    free(head);
 }
 
-void clean_entries_table() {
-
-}
-
-void clean_code() {
-
-}
-
-void clean_data() {
-
+void clean_code(machine_words *head) {
+    if (!head)
+        return;
+    clean_code(head->next);
+    free(head);
 }
 
 void first_pass(FILE *fp) {
 
     char line[MAX_CODE_LINE];
-    lines_count = 1;
     char *line_p;
+    lines_count = 1;
     line_p = line;
     while (fgets(line, MAX_CODE_LINE, fp)) {
         line_p = line;
@@ -241,9 +268,6 @@ char *go_to_next_field(char *line) {
 int process_line_first_pass(char *line) {
     {
 
-
-        /*char *p=line  ;*/
-        int temp = 0;
         int is_label = 0;
         int is_macro = 0;
 
@@ -276,13 +300,13 @@ int process_line_first_pass(char *line) {
         is_label = find_label(line, TRUE);
         if (is_label) {
             line = go_to_next_field(line);
+            if (line == NULL) {
+                err_count++;
+                print_error(LABEL_WITH_NO_DATA_ERROR, lines_count);
+                return 0;
+            }
         }
 
-        if (line == NULL) {
-            err_count++;
-            print_error(LABEL_WITH_NO_DATA_ERROR, lines_count);
-            return 0;
-        }
 
         /* Looking for directive... */
         if (*line == '.') {
@@ -302,8 +326,8 @@ void process_line_second_pass(char *line) {
     char *directive_type_str;
     int i = 0;
     int directive_type;
-    sym_pt entry_sym = NULL;
     char *line_head;
+    opcode_p opcode;
 
     /******** Dealing with Label *******************/
     is_label = find_label(line, FALSE);
@@ -320,15 +344,14 @@ void process_line_second_pass(char *line) {
     while (!isspace(*line++)) {
         i++;
     }
-    directive_type_str = strndup(line_head, i);
+    directive_type_str = strndup_local(line_head, i);
     directive_type = find_directive_type(directive_type_str);
 
-    if (directive_type == ENTRY_DIRECTIVE_TYPE) {
-        process_entry_line(line);
-        return;
-    }
 
     switch (directive_type) {
+        case ENTRY_DIRECTIVE_TYPE:
+            process_entry_line(line);
+            return;
         case MACRO_DIRECTIVE_TYPE:
             return;
         case DATA_DIRECTIVE_TYPE :
@@ -340,28 +363,25 @@ void process_line_second_pass(char *line) {
     }
 
 
-    opcode_p opcode = get_opcode_node(directive_type_str);
-    if (!opcode) {
-        print_error(SYNTAX_ERROR, lines_count);
-        return;
-    } else {
-        process_instruction_second_pass(line, *opcode);
-    }
+    opcode = get_opcode_node(directive_type_str);
+    process_instruction_second_pass(line, *opcode);
 
 
 }
 
 void process_instruction_second_pass(char *line, Opcode command) {
+
+    char operands[2][LABEL_MAX_SIZE];
     machine_words *first_word;
     machine_words *current_word;
-    machine_words *extra = NULL;
     machine_word_instruction *empty = (machine_word_instruction *) malloc(sizeof(machine_word_instruction));
-    char *first_operand;
     int i;
     int num_of_operands;
     int num_of_total_words = get_number_of_instruction_words(line, empty, command);
 
-    char operands[2][LABEL_MAX_SIZE];
+    if (num_of_total_words == 1)
+        return;
+
     num_of_operands = strip_operands(line, operands);
 
     first_word = get_machine_word_by_address(IC);
@@ -385,7 +405,7 @@ void process_instruction_second_pass(char *line, Opcode command) {
         }
     } else {
         for (i = 0; i < num_of_operands; ++i) {
-            current_word = process_operand(operands[i], current_word);
+            current_word = process_operand(operands[i], current_word, (i == 0) ? SRC_REGISTER : DEST_REGISTER);
         }
     }
 
@@ -405,16 +425,16 @@ void set_register_field_in_word(machine_words *word, char *string, int src_or_de
     word->value |= value;
 }
 
-machine_words *process_operand(char operand[LABEL_MAX_SIZE], machine_words *current_word) {
-/*TODO: finish this method PERMANENT_INDEX, DIRECT_REGISTER */
+machine_words *process_operand(char operand[50], machine_words *current_word, int operand_type) {
     int immediate_value;
-    char *label_string;
     int address;
-
-    char *iterator;
+    unsigned int register_num;
+    char *operand_head;
+    char *operand_address;
     int i;
-    addressing_methods method = get_operand_addressing_method(operand).method;
     sym_pt label;
+
+    addressing_methods method = get_operand_addressing_method(operand).method;
     switch (method) {
         case IMMEDIATE:
             strip_number_or_label(++operand, &immediate_value);
@@ -428,55 +448,69 @@ machine_words *process_operand(char operand[LABEL_MAX_SIZE], machine_words *curr
                 err_count++;
                 return current_word->next;
             }
-            if(label->type == EXTERN_DIRECTIVE_TYPE)
-            {
-                label->value = current_word->address;
+            if (label->type == EXTERN_DIRECTIVE_TYPE) {
+                add_to_externals(label->label, current_word->address);
             }
             current_word->value = (label->value) << 2;
 
             /* set A R E field */
-            current_word->value = (label->type == EXTERN_DIRECTIVE_TYPE) ? (current_word->value) | 1u : 2u;
+            current_word->value = (label->type == EXTERN_DIRECTIVE_TYPE) ? (current_word->value) | 1u :
+                                  (current_word->value) | 2u;
             return current_word->next;
         case PERMANENT_INDEX:
-            iterator = operand;
-            /* i = 0;
-             while (*iterator && *(iterator)++ != '[') {
-                 i++;
-             }
-             label_string = strndup(operand, i);*/
-            operand = strip_number_or_label(operand, &address);
+            operand_head = operand;
+            i = 0;
+            while (*operand != '[') {
+                i++;
+                operand++;
+            }
+            operand_address = strndup_local(operand_head, i);
+            label = search_label(operand_address, symbol_head);
+            address = label->value;
+            address <<= 2;
+            if (label->type == EXTERN_DIRECTIVE_TYPE)
+                address |= 1;
+            else
+                address |= 2;
+
             current_word->value = address;
             current_word = current_word->next;
             operand++;
 
-            operand = strip_number_or_label(operand, &address);
+            strip_number_or_label(operand, &address);
+            address <<= 2;
             current_word->value = address;
             return current_word->next;
 
         case DIRECT_REGISTER:
+            register_num = is_register(operand);
+            if (operand_type == SRC_REGISTER)
+                register_num <<= 5;
+            else if (operand_type == DEST_REGISTER)
+                register_num <<= 2;
+            else
+                printf("Unrecognized operand type at line: %d", lines_count);
+
+            current_word->value = register_num;
             return current_word->next;
-            break;
         default:
             printf("Unable to create operands extra words for operand: %s", operand);
             break;
 
     }
-
-}
-
-machine_words *create_instruction_extra_words(char *line, machine_word_instruction *pInstruction, int total_words,
-                                              char operands[2][LABEL_MAX_SIZE]) {
     return NULL;
 }
 
+
 void process_entry_line(char *line) {
     char entry_name[LABEL_MAX_SIZE];
+    sym_pt label;
 
     line = strip_blank_chars(line);
 
     strip_label_chars(line, entry_name);
 
-    sym_pt label = search_label(entry_name, symbol_head);
+    label = search_label(entry_name, symbol_head);
 
     if (!label) {
         print_error(ENTRY_NOT_EXIST, lines_count);
@@ -518,15 +552,19 @@ int process_macro(char *line) {
 }
 
 int process_instruction_first_pass(char *line, int is_label) {
-    if (DEBUG)
-        printf("Processing Phase 1 instruction: \n\t%s\n", line);
+    machine_word_instruction *first_word;
+    opcode_p opcode;
+    machine_words *word;
 
     char instruction[MAX_OPCODE_BITS];
     int L;
     int i;
 
+    if (DEBUG)
+        printf("Processing Phase 1 instruction: \n\t%s\n", line);
+
     if (is_label) {
-        add_symbol(label, find_directive_type("code"), IC + 100);
+        add_symbol(label, find_directive_type("code"), IC);
 
     }
     if (!isalpha(*line)) {
@@ -535,25 +573,27 @@ int process_instruction_first_pass(char *line, int is_label) {
     }
     line = strip_label_chars(line, instruction);
 
-    opcode_p opcode = get_opcode_node(instruction);
-    if (!opcode)
-        return 0;
+    opcode = get_opcode_node(instruction);
 
+    if (!opcode) {
+        print_error(INSTRUCTION_NOT_FOUND, lines_count);
+        return 0;
+    }
     line = strip_blank_chars(line);
 
-    machine_word_instruction *first_word = (machine_word_instruction *) malloc(sizeof(machine_word_instruction));
+    first_word = (machine_word_instruction *) malloc(sizeof(machine_word_instruction));
 
     L = get_number_of_instruction_words(line, first_word, *opcode);
 
-    machine_words *word = parse_word_as_unsigned_int(*first_word);
+    word = parse_word_as_unsigned_int(*first_word);
     word->address = IC++;
     word->desc = line;
-    add_machine_words(word);
-    for (int i = 1; i < L; ++i) {
+    add_machine_words(word, CODE_DIRECTIVE_TYPE);
+    for (i = 1; i < L; ++i) {
         word = create_empty_word();
         word->address = IC++;
         word->desc = line;
-        add_machine_words(word);
+        add_machine_words(word, CODE_DIRECTIVE_TYPE);
     }
 
     return 0;
@@ -581,12 +621,12 @@ bool find_label(char *line, bool print_errors) {
             return FALSE;
         }
         for (c = 0; c < i; c++) { /* checking label characters.*/
-            if (!isdigit(line[c]) && !isalpha(line[c])) {
+            if (!isdigit(label[c]) && !isalpha(label[c])) {
                 print_error(LABEL_CONTAINS_INVALID_CHARACTER_ERROR, lines_count);
                 return FALSE;
             }
         }
-        if (!isalpha(*line)) { /* label must start with an alpha char */
+        if (!isalpha(*label)) { /* label must start with an alpha char */
             print_error(LABEL_FIRST_CHAR_IS_NOT_ALPHA_ERROR, lines_count);
             return FALSE;
         }
@@ -615,11 +655,7 @@ bool search_entry(char label[50]) {
 
 int process_directive_first_pass(char *line, int is_label) {
     char *directive_type_str;
-    int directive_type, i, address;
-    bool is_external, is_action, is_data;
-    is_action = FALSE;
-    is_data = FALSE;
-    is_external = FALSE;
+    int directive_type, i, address, num_words;
 
     char extern_label[LABEL_MAX_SIZE];
 
@@ -628,7 +664,7 @@ int process_directive_first_pass(char *line, int is_label) {
     i = 0;
     while (!isspace(*line++))
         i++;
-    directive_type_str = strndup(line_head, i);
+    directive_type_str = strndup_local(line_head, i);
     directive_type = find_directive_type(directive_type_str);
     if (directive_type == NOT_EXISTS_DIRECTIVE_TYPE) {
         print_error(NOT_EXISTS_DIRECTIVE_ERROR, lines_count);
@@ -638,7 +674,6 @@ int process_directive_first_pass(char *line, int is_label) {
     if (directive_type == ENTRY_DIRECTIVE_TYPE) {
         return 0; /* Don't handle '.entry' in first pass. */
     } else if (directive_type == EXTERN_DIRECTIVE_TYPE) {
-        is_external = TRUE;
         line = strip_label_chars(line, extern_label);
         address = 0;
         add_symbol(extern_label, directive_type, address);
@@ -648,16 +683,15 @@ int process_directive_first_pass(char *line, int is_label) {
         }
         return 0;
     } else {
-        is_data = TRUE;
         address = DC;
     }
 
 
     if (is_label) {
-        add_symbol(label, directive_type, IC);
+        add_symbol(label, directive_type, DC);
     }
 
-    int num_words = process_data_or_string_line(line);
+    num_words = process_data_or_string_line(line);
     return num_words;
 
 
@@ -665,9 +699,9 @@ int process_directive_first_pass(char *line, int is_label) {
 
 
 int process_data_or_string_line(char *line) {
+
     machine_words *string_words;
     machine_words *number_words;
-    machine_words *empty;
 
     if (*line == '\"') {
         line++;
@@ -676,7 +710,7 @@ int process_data_or_string_line(char *line) {
             printf("\nProcessing string data store\n");
             print_data_machine_words(string_words);
         }
-        add_machine_words(string_words);
+        add_machine_words(string_words, STRING_DIRECTIVE_TYPE);
         return get_number_of_words(string_words);
     } else if (isdigit(*line)) {
 
@@ -685,7 +719,7 @@ int process_data_or_string_line(char *line) {
             printf("\nProcessing numbers data store\n");
             print_data_machine_words(number_words);
         }
-        add_machine_words(number_words);
+        add_machine_words(number_words, DATA_DIRECTIVE_TYPE);
         return get_number_of_words(number_words);
     } else {
         print_error(BAD_COMMAND_ARGUMENT, lines_count);
@@ -712,7 +746,7 @@ char *strip_blank_chars(char *line) {
 char *strip_label_chars(char *line, char label_name[LABEL_MAX_SIZE]) {
     char c;
     char *name = label_name;
-    char count = 0;
+    int count = 0;
 
     name = label_name;
     if (!isalpha(*line)) {
@@ -742,7 +776,7 @@ char *strip_label_chars(char *line, char label_name[LABEL_MAX_SIZE]) {
 char *strip_operand_chars(char *line, char label_name[LABEL_MAX_SIZE]) {
     char c;
     char *name;
-    char count = 0;
+    int count = 0;
 
     name = label_name;
 
@@ -805,25 +839,61 @@ char *strip_number(char *line, int *value) {
 }
 
 char *strip_number_or_label(char *line, int *value) {
-    char c;
+    sym_pt label;
     char *name = (char *) malloc(LABEL_MAX_SIZE);
-    char count = 0;
-    char *name_head = name;
-
-    int is_minus = 0;
 
     if (isdigit(*line) || *line == '-' || *line == '+') {
         return strip_number(line, value);
     } else if (isalpha(*line)) {
         line = strip_label_chars(line, name);
-        sym_pt label = search_label(name, symbol_head);
+        label = search_label(name, symbol_head);
         if (label == NULL) {
-            print_error(LABEL_WITH_NO_DATA_ERROR, lines_count);
+            print_error(LABEL_NOT_FOUND, lines_count);
         } else {
             *value = label->value;
         }
         return line;
     }
-
+    return line;
 }
 
+char *strndup_local(const char *s, size_t n) {
+    char *result;
+    size_t len = strnlen_local(s, n);
+
+    result = (char *) malloc(len + 1);
+    if (!result)
+        return 0;
+
+    result[len] = '\0';
+    return (char *) memcpy(result, s, len);
+}
+
+
+char *strdup_local(char *src) {
+    char *str;
+    char *p;
+    int len = 0;
+
+    while (src[len])
+        len++;
+    str = malloc(len + 1);
+    p = str;
+    while (*src)
+        *p++ = *src++;
+    *p = '\0';
+    return str;
+}
+
+size_t strlen_local(const char *str) {
+    const char *s;
+
+    for (s = str; *s; ++s);
+    return (s - str);
+}
+
+size_t strnlen_local(const char *s, size_t max_len) {
+    size_t i = 0;
+    for (; (i < max_len) && s[i]; ++i);
+    return i;
+}

@@ -1,14 +1,15 @@
+#include "file_processing.h"
 #include <values.h>
 #include "machine_code.h"
-#include "file_processing.h"
 
-machine_words *head = NULL;
+machine_words *head_instructions = NULL;
+machine_words *head_data = NULL;
 
-addressing_method immediate_addressing_method = {.method = IMMEDIATE, .num_of_words = 1};
-addressing_method direct_addressing_method = {.method = DIRECT, .num_of_words = 1};
-addressing_method permanent_index_addressing_method = {.method = PERMANENT_INDEX, .num_of_words = 2};
-addressing_method direct_register_addressing_method = {.method = DIRECT_REGISTER, .num_of_words = 1};
-addressing_method unknown_addressing_method = {.method = UNKNOWN, .num_of_words = 0};
+addressing_method immediate_addressing_method = {IMMEDIATE, 1};
+addressing_method direct_addressing_method = {DIRECT, 1};
+addressing_method permanent_index_addressing_method = {PERMANENT_INDEX, 2};
+addressing_method direct_register_addressing_method = {DIRECT_REGISTER, 1};
+addressing_method unknown_addressing_method = {UNKNOWN, 0};
 
 
 void print_machine_word(machine_word_instruction word) {
@@ -26,29 +27,31 @@ void print_machine_word(machine_word_instruction word) {
 
 }
 
-void add_machine_word(machine_words *word) {
+void add_machine_word(machine_words *word, int type) {
     machine_words *new_word;
     machine_words *latest_word_before;
     machine_words *iterator;
+    machine_words **head = (type == DATA_DIRECTIVE_TYPE || type == STRING_DIRECTIVE_TYPE) ? &head_data
+                                                                                          : &head_instructions;
 
     if (!word)
         return;
 
-    new_word = create_machine_word(word->address, word->value, word->desc);
+    new_word = create_machine_word(word->address, word->value, word->desc, type);
 
-    if (!head) {
-        head = new_word;
+    if (!*head) {
+        *head = new_word;
         return;
     }
-    iterator = head;
+    iterator = *head;
 
-    /* If needed to insert in head */
+    /* If needed to insert in head_instructions */
     if (word->address < iterator->address) {
-        new_word->next = head;
-        head = new_word;
+        new_word->next = *head;
+        *head = new_word;
         return;
     }
-    latest_word_before;
+
     while (iterator && word->address > iterator->address) {
         latest_word_before = iterator;
         iterator = iterator->next;
@@ -103,14 +106,15 @@ char *parse_instruction_word_string_represntation(machine_word_instruction word)
 
 char *parse_word_string_represntation(machine_words word) {
     unsigned int iterator;
+    int i;
     char *s = (char *) malloc(sizeof(char) * WORD_SIZE);
     char *s_head = s;
 
-    for (int i = 0; i < WORD_SIZE; ++i) {
-        iterator = 1u << (WORD_SIZE-1);
-        iterator>>=i;
+    for (i = 0; i < WORD_SIZE; ++i) {
+        iterator = 1u << (WORD_SIZE - 1);
+        iterator >>= i;
 
-        *s = (iterator&word.value)?'1':'0';
+        *s = (iterator & word.value) ? '1' : '0';
         s++;
     }
 
@@ -119,6 +123,7 @@ char *parse_word_string_represntation(machine_words word) {
 
 machine_words *parse_word_as_unsigned_int(machine_word_instruction word) {
     unsigned int new_word_unsigned_int = word.a_r_e;
+    machine_words *new_machine_word;
     unsigned int temp = word.address_operand_dest;
     temp <<= 2;
     new_word_unsigned_int |= temp;
@@ -131,7 +136,7 @@ machine_words *parse_word_as_unsigned_int(machine_word_instruction word) {
     temp <<= 6;
     new_word_unsigned_int |= temp;
 
-    machine_words *new_machine_word = (machine_words *) malloc(sizeof(machine_words));
+    new_machine_word = (machine_words *) malloc(sizeof(machine_words));
 
     new_machine_word->value = new_word_unsigned_int;
 
@@ -139,14 +144,11 @@ machine_words *parse_word_as_unsigned_int(machine_word_instruction word) {
 
 }
 
-void add_machine_words(machine_words *words) {
-    machine_words *exists_words_iterator = head;
+void add_machine_words(machine_words *words, int type) {
     machine_words *new_words_iterator = words;
 
-    machine_words *latest_word_before = head;
-
     while (new_words_iterator) {
-        add_machine_word(new_words_iterator);
+        add_machine_word(new_words_iterator, type);
         new_words_iterator = new_words_iterator->next;
     }
 
@@ -178,24 +180,26 @@ machine_words *create_string_words(char *line) {
         /*head_word = malloc(sizeof(machine_words));*/
 
         buffer = head_word;
-        head_word = create_machine_word(IC++, c, line);
+        head_word = create_machine_word(DC, c, line, STRING_DIRECTIVE_TYPE);
         head_word->next = buffer;
 
         DC++;
         line++;
     }
     buffer = head_word;
-    head_word = create_machine_word(IC++, 0, line);
+    head_word = create_machine_word(DC, 0, line, STRING_DIRECTIVE_TYPE);
     head_word->next = buffer;
+    DC++;
 
     return head_word;
 }
 
-machine_words *create_machine_word(int address, int value, char *desc) {
+machine_words *create_machine_word(int address, int value, char *desc, int type) {
     machine_words *new_word = (machine_words *) malloc(sizeof(machine_words));
     new_word->value = value;
     new_word->address = address;
-    new_word->desc = strndup(desc, MAX_CODE_LINE);
+    new_word->desc = strndup_local(desc, MAX_CODE_LINE);
+    new_word->type = type;
     return new_word;
 }
 
@@ -204,14 +208,12 @@ machine_words *create_number_words(char *line) {
     int new_num_data;
     machine_words *head_word = NULL;
     machine_words *buffer = NULL;
-    bool there_is_data = TRUE;
     new_num_data = 0;
 
     while (line = strip_number_or_label(line, &new_num_data), line != NULL) {
 
         buffer = head_word;
-        head_word = create_machine_word(IC, new_num_data, line);
-        IC++;
+        head_word = create_machine_word(DC, new_num_data, line, DATA_DIRECTIVE_TYPE);
         DC++;
         head_word->next = buffer;
         line = strip_blank_chars(line);
@@ -232,12 +234,10 @@ machine_words *create_number_words(char *line) {
     return head_word;
 }
 
-int get_number_of_words(machine_words* head)
-{
+int get_number_of_words(machine_words *head) {
     int count = 0;
-    machine_words* iterator = head;
-    while(iterator!=NULL)
-    {
+    machine_words *iterator = head;
+    while (iterator != NULL) {
         count++;
         iterator = iterator->next;
     }
@@ -246,32 +246,28 @@ int get_number_of_words(machine_words* head)
 
 int get_number_of_instruction_words(char *line, machine_word_instruction *first_word, Opcode opcode) {
     int word_count = 1;
-    int argument_count;
-    char c;
-    char argument[LABEL_MAX_SIZE];
-    int i;
     char operands[2][LABEL_MAX_SIZE];/* 0 - source operand, 1 dest operand */
     int num_of_operands;
     addressing_method src_operand;
     addressing_method dest_operand;
-    int a_r_e = 0;
+
+    first_word->opcode = opcode.code;
 
     if (!(*line)) {
         return 1;
     }
 
-    line = strip_blank_chars(line);
     num_of_operands = strip_operands(line, operands);
-
+    if (!num_of_operands) {
+        return 1;
+    }
 
     src_operand = get_operand_addressing_method(operands[0]);
     dest_operand = get_operand_addressing_method(operands[1]);
 
-    first_word->opcode = opcode.code;
-    first_word->address_operand_src = src_operand.method;
-    first_word->address_operand_dest = dest_operand.method;
+    first_word->address_operand_src = (num_of_operands == 1) ? dest_operand.method : src_operand.method;
+    first_word->address_operand_dest = (num_of_operands == 1) ? src_operand.method : dest_operand.method;
 
-    /* TODO: Ask Yakir from one hand there is DC starting from zero but in the example in course notebook the data gets the IC */
     first_word->a_r_e = 0;
 
     if (DEBUG) {
@@ -303,10 +299,10 @@ int strip_operands(char *line, char operands[2][50]) {
 }
 
 addressing_method get_operand_addressing_method(char string[50]) {
+    char temp[LABEL_MAX_SIZE];
     if (!(*string)) {
         return unknown_addressing_method;
     }
-    char temp[LABEL_MAX_SIZE];
     if (string[0] == '#')
         return immediate_addressing_method;
     else if (strstr(string, "["))
@@ -321,11 +317,28 @@ addressing_method get_operand_addressing_method(char string[50]) {
 }
 
 machine_words *get_machine_word_by_address(int address) {
-    machine_words *iterator = head;
+    machine_words *iterator = head_instructions;
     while (iterator) {
         if (iterator->address == address)
             return iterator;
         iterator = iterator->next;
     }
     return NULL;
+}
+
+void update_data_addresses(sym_pt head, int last_IC) {
+    machine_words *iterator = head_data;
+    update_data_label_addresses(head, last_IC);
+
+    while (iterator) {
+        iterator->address += last_IC;
+        iterator = iterator->next;
+    }
+}
+
+void clean_data(machine_words *head) {
+    if(!head)
+        return;
+    clean_data(head->next);
+    free(head);
 }
