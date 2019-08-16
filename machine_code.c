@@ -139,7 +139,7 @@ machine_words *parse_word_as_unsigned_int(machine_word_instruction word) {
     new_machine_word = (machine_words *) malloc(sizeof(machine_words));
 
     new_machine_word->value = new_word_unsigned_int;
-
+    new_machine_word->next=NULL;
     return new_machine_word;
 
 }
@@ -200,6 +200,7 @@ machine_words *create_machine_word(int address, int value, char *desc, int type)
     new_word->address = address;
     new_word->desc = strndup_local(desc, MAX_CODE_LINE);
     new_word->type = type;
+    new_word->next = NULL;
     return new_word;
 }
 

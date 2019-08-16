@@ -58,11 +58,17 @@ void process_file(char *filename) {
     FILE *fp;
     int IC_after_first_pass;
     char *file_name_copy = malloc(sizeof(filename));
+    head_instructions = NULL;
+    head_data = NULL;
+    symbol_head = NULL;
+    extern_head = NULL;
+
     file_name_copy = strcpy(file_name_copy, filename);
     file_name_copy = strcat(file_name_copy, ASSEMBLY_FILE_EXTEN);
     fp = fopen(file_name_copy, "r");
     if (!fp) {
-        perror("Error while opening file assembly file");
+        printf("Unable to open assembly file %s: %s\n", file_name_copy, strerror(errno));
+        return;
     }
     IC = 100;
     DC = 0;
@@ -215,17 +221,22 @@ void clean_symbol_table(sym_pt head) {
 }
 
 void clean_externs_table(externals_table *head) {
-    if (!head)
-        return;
-    clean_externs_table(head->next);
-    free(head);
+    externals_table *tmp;
+    while (head) {
+        tmp = head;
+        head = head->next;
+        free(tmp);
+    }
 }
 
 void clean_code(machine_words *head) {
-    if (!head)
-        return;
-    clean_code(head->next);
-    free(head);
+    machine_words *tmp;
+    while (head) {
+        tmp = head;
+        head = head->next;
+        free(tmp);
+    }
+
 }
 
 void first_pass(FILE *fp) {
@@ -235,6 +246,7 @@ void first_pass(FILE *fp) {
     lines_count = 1;
     line_p = line;
     while (fgets(line, MAX_CODE_LINE, fp)) {
+
         line_p = line;
         /*Printing the addresses of pointers*/
         /*printf("%p\n", (void *)line_p);
@@ -374,10 +386,20 @@ void process_instruction_second_pass(char *line, Opcode command) {
     char operands[2][LABEL_MAX_SIZE];
     machine_words *first_word;
     machine_words *current_word;
-    machine_word_instruction *empty = (machine_word_instruction *) malloc(sizeof(machine_word_instruction));
+    machine_word_instruction *empty;
+
     int i;
     int num_of_operands;
-    int num_of_total_words = get_number_of_instruction_words(line, empty, command);
+    int num_of_total_words;
+
+    empty = (machine_word_instruction *) malloc(sizeof(machine_word_instruction));
+    empty->opcode = 0;
+    empty->address_operand_src = 0;
+    empty->address_operand_dest = 0;
+    empty->a_r_e = 0;
+    empty->unused = 0;
+
+    num_of_total_words = get_number_of_instruction_words(line, empty, command);
 
     if (num_of_total_words == 1)
         return;
@@ -582,6 +604,12 @@ int process_instruction_first_pass(char *line, int is_label) {
     line = strip_blank_chars(line);
 
     first_word = (machine_word_instruction *) malloc(sizeof(machine_word_instruction));
+    first_word->unused = 0;
+    first_word->a_r_e = 0;
+    first_word->address_operand_dest = 0;
+    first_word->address_operand_src = 0;
+    first_word->opcode = 0;
+
 
     L = get_number_of_instruction_words(line, first_word, *opcode);
 
@@ -600,7 +628,11 @@ int process_instruction_first_pass(char *line, int is_label) {
 }
 
 machine_words *create_empty_word() {
-    return (machine_words *) malloc(sizeof(machine_words));
+    machine_words *new = (machine_words *) malloc(sizeof(machine_words));
+    new->value = 0;
+    new->address = 0;
+    new->next = NULL;
+    return new;
 }
 
 bool find_label(char *line, bool print_errors) {
@@ -834,17 +866,18 @@ char *strip_number(char *line, int *value) {
     } else {
         *value = is_minus ? atoi(name_head) * (-1) : atoi(name_head);
     }
-
+    free(name_head);
     return line;
 }
 
 char *strip_number_or_label(char *line, int *value) {
     sym_pt label;
-    char *name = (char *) malloc(LABEL_MAX_SIZE);
+    char *name;
 
     if (isdigit(*line) || *line == '-' || *line == '+') {
         return strip_number(line, value);
     } else if (isalpha(*line)) {
+        name = (char *) malloc(LABEL_MAX_SIZE);
         line = strip_label_chars(line, name);
         label = search_label(name, symbol_head);
         if (label == NULL) {
@@ -852,6 +885,7 @@ char *strip_number_or_label(char *line, int *value) {
         } else {
             *value = label->value;
         }
+        free(name);
         return line;
     }
     return line;

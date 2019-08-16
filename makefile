@@ -40,3 +40,6 @@ clean:
 	rm -f example.ob
 	rm -f example.ent
 	rm -f example.ext
+	rm -f example2.ob
+	rm -f example2.ent
+	rm -f example2.ext

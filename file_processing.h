@@ -3,11 +3,12 @@
 
 
 #include <stdio.h>
+#include <ctype.h>
+#include <string.h>
+#include <errno.h>
 #include "error_handling.h"
 #include "symbol_tree.h"
 #include "utils.h"
-#include <ctype.h>
-#include <string.h>
 #include "keywords.h"
 #include "opcode.h"
 #include "directives.h"
