@@ -74,6 +74,5 @@ Opcode *get_opcode_node(char *op) {
         if(hash_table[i] && !strcmp(hash_table[i]->name,op))
             return hash_table[i];
     }
-     print_error(INSTRUCTION_NOT_FOUND, lines_count);
     return NULL;
 }

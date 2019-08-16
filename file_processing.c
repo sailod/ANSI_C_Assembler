@@ -207,7 +207,7 @@ void generate_entries_file(sym_pt head, FILE *fp) {
 }
 
 void clean_symbol_table(sym_pt head) {
-    if(!head)
+    if (!head)
         return;
     clean_symbol_table(head->left);
     clean_symbol_table(head->right);
@@ -215,14 +215,14 @@ void clean_symbol_table(sym_pt head) {
 }
 
 void clean_externs_table(externals_table *head) {
-    if(!head)
+    if (!head)
         return;
     clean_externs_table(head->next);
     free(head);
 }
 
 void clean_code(machine_words *head) {
-    if(!head)
+    if (!head)
         return;
     clean_code(head->next);
     free(head);
@@ -300,13 +300,13 @@ int process_line_first_pass(char *line) {
         is_label = find_label(line, TRUE);
         if (is_label) {
             line = go_to_next_field(line);
+            if (line == NULL) {
+                err_count++;
+                print_error(LABEL_WITH_NO_DATA_ERROR, lines_count);
+                return 0;
+            }
         }
 
-        if (line == NULL) {
-            err_count++;
-            print_error(LABEL_WITH_NO_DATA_ERROR, lines_count);
-            return 0;
-        }
 
         /* Looking for directive... */
         if (*line == '.') {
@@ -364,12 +364,7 @@ void process_line_second_pass(char *line) {
 
 
     opcode = get_opcode_node(directive_type_str);
-    if (!opcode) {
-        print_error(SYNTAX_ERROR, lines_count);
-        return;
-    } else {
-        process_instruction_second_pass(line, *opcode);
-    }
+    process_instruction_second_pass(line, *opcode);
 
 
 }
@@ -434,7 +429,7 @@ machine_words *process_operand(char operand[50], machine_words *current_word, in
     int immediate_value;
     int address;
     unsigned int register_num;
-    char* operand_head;
+    char *operand_head;
     char *operand_address;
     int i;
     sym_pt label;
@@ -459,31 +454,31 @@ machine_words *process_operand(char operand[50], machine_words *current_word, in
             current_word->value = (label->value) << 2;
 
             /* set A R E field */
-            current_word->value = (label->type == EXTERN_DIRECTIVE_TYPE) ? (current_word->value) | 1u : (current_word->value) | 2u;
+            current_word->value = (label->type == EXTERN_DIRECTIVE_TYPE) ? (current_word->value) | 1u :
+                                  (current_word->value) | 2u;
             return current_word->next;
         case PERMANENT_INDEX:
             operand_head = operand;
             i = 0;
-            while(*operand  != '[')
-            {
+            while (*operand != '[') {
                 i++;
                 operand++;
             }
-            operand_address = strndup_local(operand_head,i);
-            label = search_label(operand_address,symbol_head);
+            operand_address = strndup_local(operand_head, i);
+            label = search_label(operand_address, symbol_head);
             address = label->value;
-            address<<=2;
-            if(label->type == EXTERN_DIRECTIVE_TYPE)
+            address <<= 2;
+            if (label->type == EXTERN_DIRECTIVE_TYPE)
                 address |= 1;
             else
                 address |= 2;
 
-            current_word->value =address;
+            current_word->value = address;
             current_word = current_word->next;
             operand++;
 
             strip_number_or_label(operand, &address);
-            address<<=2;
+            address <<= 2;
             current_word->value = address;
             return current_word->next;
 
@@ -579,9 +574,11 @@ int process_instruction_first_pass(char *line, int is_label) {
     line = strip_label_chars(line, instruction);
 
     opcode = get_opcode_node(instruction);
-    if (!opcode)
-        return 0;
 
+    if (!opcode) {
+        print_error(INSTRUCTION_NOT_FOUND, lines_count);
+        return 0;
+    }
     line = strip_blank_chars(line);
 
     first_word = (machine_word_instruction *) malloc(sizeof(machine_word_instruction));
@@ -851,7 +848,7 @@ char *strip_number_or_label(char *line, int *value) {
         line = strip_label_chars(line, name);
         label = search_label(name, symbol_head);
         if (label == NULL) {
-            print_error(LABEL_WITH_NO_DATA_ERROR, lines_count);
+            print_error(LABEL_NOT_FOUND, lines_count);
         } else {
             *value = label->value;
         }
